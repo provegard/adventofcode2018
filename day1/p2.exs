@@ -13,16 +13,15 @@ accumulated = inf |> Stream.transform(0, fn i, acc -> {[acc], acc + i} end)
 # duplicate, because then it won't be emitted. Instead we do one more "round" so that
 # the final stream ends with the first duplicate number.
 until_dup = accumulated |> Stream.transform(MapSet.new(), fn i, set ->
-  if set === :halt do
-    {:halt, nil}
-  else
-    if MapSet.member?(set, i) do
+  cond do
+    set === :halt ->
+      {:halt, nil}
+    MapSet.member?(set, i) ->
       # we want this element, so don't halt yet.
       # pass :halt as acc to halt next round.
       {[i], :halt}
-    else
+    true ->
       {[i], MapSet.put(set, i)}
-    end
   end
 end)
 
