@@ -18,7 +18,7 @@ defmodule Day2 do
     t1 = to_charlist(a)
     t2 = to_charlist(b)
     zipped = Enum.zip(t1, t2)
-    common = zipped |> Enum.filter(fn {a, b} -> a == b end) |> Enum.map(fn {a, b} -> a end)
+    common = zipped |> Enum.filter(fn {a, b} -> a == b end) |> Enum.map(fn {a, _} -> a end)
     # TODO: interesect_lists doesn't preserve order, fix it!
     #common_chars = Utils.intersect_lists(t1, t2)
     to_string(common)
