@@ -41,8 +41,8 @@ defmodule Utils do
 
     @type t :: %Graph{edges: [Edge.t]}
 
-    @spec shortest_path(Graph.t, any(), any()) :: integer
-    def shortest_path(graph, src, dst) do
+    @spec shortest_distance(Graph.t, any(), any()) :: integer
+    def shortest_distance(graph, src, dst) do
       # https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm#Algorithm
 
       # Distance lookup map, so that we can write vertex_distance[{a, b}]

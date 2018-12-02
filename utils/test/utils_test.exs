@@ -25,19 +25,19 @@ defmodule UtilsTest do
     assert Utils.intersect_lists([1, 2, 3], [4, 5, 6]) == []
   end
 
-  test "shortest_path given a single edge" do
+  test "shortest_distance given a single edge" do
     e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
     graph = %Utils.Graph{edges: [e1]}
-    assert Utils.Graph.shortest_path(graph, :foo, :bar) == 5
+    assert Utils.Graph.shortest_distance(graph, :foo, :bar) == 5
   end
 
-  test "shortest_path given multiple edges" do
+  test "shortest_distance given multiple edges" do
     e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
     e2 = %Utils.Graph.Edge{from: :bar, to: :qux, distance: 5}
     e3 = %Utils.Graph.Edge{from: :foo, to: :baz, distance: 4}
     e4 = %Utils.Graph.Edge{from: :baz, to: :qux, distance: 5}
 
     graph = %Utils.Graph{edges: [e1, e2, e3, e4]}
-    assert Utils.Graph.shortest_path(graph, :foo, :qux) == 9 # :foo -> :baz -> :qux
+    assert Utils.Graph.shortest_distance(graph, :foo, :qux) == 9 # :foo -> :baz -> :qux
   end
 end
