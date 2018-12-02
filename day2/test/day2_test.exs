@@ -17,7 +17,7 @@ defmodule Day2Test do
 
   test "part1" do
     input = Utils.readlines("input")
-    assert Day2.part1(input) == nil
+    assert Day2.part1(input) == 5976
   end
 
   test "part2_tests" do
@@ -35,6 +35,6 @@ defmodule Day2Test do
 
   test "part2" do
     input = Utils.readlines("input")
-    assert Day2.part2(input) == nil
+    assert Day2.part2(input) == "xretqmmonskvzupalfiwhcfdb"
   end
 end

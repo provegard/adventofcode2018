@@ -9,7 +9,7 @@ defmodule Day1MixTest do
 
   test "part1" do
     numbers = Utils.readlines_as_integers("input")
-    assert Day1Mix.part1(numbers) == nil
+    assert Day1Mix.part1(numbers) == 435
   end
 
   test "part2 test cases" do
@@ -20,6 +20,6 @@ defmodule Day1MixTest do
 
   test "part2" do
     numbers = Utils.readlines_as_integers("input")
-    assert Day1Mix.part2(numbers) == nil
+    assert Day1Mix.part2(numbers) == 245
   end
 end
