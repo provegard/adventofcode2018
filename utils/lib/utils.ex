@@ -73,9 +73,22 @@ defmodule Utils do
     defstruct edges: nil
 
     @type t :: %Graph{edges: [Edge.t]}
+    @type vertex :: any()
 
-    @spec shortest_distance(Graph.t, any(), any()) :: integer
+    @spec shortest_distance(t, vertex, vertex) :: integer
     def shortest_distance(graph, src, dst) do
+      {dist, _} = shortest(graph, src, dst)
+      dist
+    end
+
+    @spec shortest_path(t, vertex, vertex) :: [vertex]
+    def shortest_path(graph, src, dst) do
+      {_, path} = shortest(graph, src, dst)
+      path
+    end
+
+    @spec shortest(t, vertex, vertex) :: {integer, [vertex]}
+    defp shortest(graph, src, dst) do
       # https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm#Algorithm
 
       # Distance lookup map, so that we can write vertex_distance[{a, b}]
@@ -100,25 +113,36 @@ defmodule Utils do
         d = if v == src, do: 0, else: :infinity
         Map.put(acc, v, d)
       end)
+      prev = %{}
       #prev = Enum.reduce(unvisited, %{}, fn v, acc -> Map.put(acc, v, nil) end)
 
-      find(unvisited, best_distance, neighbors, vertex_distance, dst)
+      find_path(unvisited, best_distance, neighbors, vertex_distance, prev, src, dst)
     end
 
-    defp find(unvisited, best_distance, neighbors, vertex_distance, dst) do
+    defp find_path(unvisited, best_distance, neighbors, vertex_distance, current_prev, src, dst) do
       # Find the vertext with the smallest distance
       u = hd Enum.sort(unvisited, fn a, b -> best_distance[a] < best_distance[b] end)
       if u == dst do
         # done
         # given prev, can backtrack here to get path
-        best_distance[u]
+        {best_distance[u], backtrack(src, dst, current_prev)}
       else
         unvisited_neighbors_of_u = Utils.intersect_lists(neighbors[u], unvisited)
-        new_best_distance = Enum.reduce(unvisited_neighbors_of_u, best_distance, fn v, best ->
+        {new_best_distance, new_prev} = Enum.reduce(unvisited_neighbors_of_u, {best_distance, current_prev}, fn v, {best, prev} ->
           alt = best[u] + vertex_distance[{u, v}]
-          if alt < best[v], do: Map.put(best, v, alt), else: best
+          if alt < best[v], do: {Map.put(best, v, alt), Map.put(prev, v, u)}, else: {best, prev}
         end)
-        find(MapSet.delete(unvisited, u), new_best_distance, neighbors, vertex_distance, dst)
+        find_path(MapSet.delete(unvisited, u), new_best_distance, neighbors, vertex_distance, new_prev, src, dst)
+      end
+    end
+
+    @spec backtrack(vertex, vertex, Map.t) :: [vertex]
+    defp backtrack(src, cur, prev) do
+      cond do
+        cur == nil       -> []
+        src == cur       -> [cur]
+        prev[cur] == nil -> []
+        true             -> backtrack(src, prev[cur], prev) ++ [cur]
       end
     end
 
