@@ -13,6 +13,17 @@ defmodule Utils do
       |> Enum.map(&String.to_integer/1)
   end
 
+  @doc ~S"""
+  Converts an enumerable of string to an enumerable of tuples based on
+  capturing groups in a regular expression. Note that the entire match will
+  not be part of the tuple.
+
+  ## Examples
+
+      iex> Utils.to_tuples_via_regex(["a,c", "d,e"], ~r/(.*),(.*)/)
+      [{"a", "c"}, {"d", "e"}]
+
+  """
   def to_tuples_via_regex(enumerable, regex) do
     enumerable
       |> Enum.map(fn x ->
