@@ -2,6 +2,10 @@ defmodule UtilsTest do
   use ExUnit.Case
   doctest Utils
 
+  test "by_frequency" do
+    assert Utils.by_frequency('aabccc') == %{2 => ?a, 1 => ?b, 3 => ?c}
+  end
+
   test "readlines reads lines, stripping whitespace" do
     lines = Utils.readlines("test/lines.txt")
     assert lines == ["1", "2", "3"]

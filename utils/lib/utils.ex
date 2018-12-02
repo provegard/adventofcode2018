@@ -26,6 +26,12 @@ defmodule Utils do
     MapSet.intersection(Enum.into(list1, MapSet.new), Enum.into(list2, MapSet.new)) |> MapSet.to_list
   end
 
+  def by_frequency(enumerable) do
+    Enum.group_by(enumerable, fn e1 -> Enum.count(enumerable, fn e2 -> e1 == e2 end) end)
+      |> Enum.map(fn {k, v} -> {k, hd v} end)
+      |> Enum.into(%{})
+  end
+
   defmodule Graph do
     defmodule Edge do
       defstruct from: nil, to: nil, distance: 0

@@ -7,9 +7,7 @@ defmodule Day2 do
   end
 
   defp contains_exactly_letters(x, cnt) do
-    chars = to_charlist(x)
-    by_freq = Enum.group_by(chars, fn ch -> Enum.count(chars, fn x -> x == ch end) end)
-    by_freq[cnt] != nil
+    Utils.by_frequency(to_charlist(x))[cnt] != nil
   end
 
   def part2(input) do
