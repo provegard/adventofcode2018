@@ -11,10 +11,11 @@ defmodule Day2 do
   end
 
   def part2(input) do
-    # Generete pairs of charlists. We generate too many ({x,x} and {x,y}/{y,x} are included),
-    # but it doesn't matter.
+    # Generete pairs of charlists.
     charlists = input |> Enum.map(&to_charlist/1)
-    pairs = charlists |> Enum.flat_map(fn x -> charlists |> Enum.map(fn y -> { x, y } end) end)
+    pairs = charlists
+      |> Enum.with_index()
+      |> Enum.flat_map(fn {x, idx} -> charlists |> Enum.drop(idx + 1) |> Enum.map(fn y -> { x, y } end) end)
 
     # Find the first pair where the difference is one character
     {a, b} = pairs |> Enum.find(nil, &differ_by_one_char/1)
