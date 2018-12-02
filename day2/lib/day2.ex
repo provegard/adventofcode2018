@@ -13,23 +13,23 @@ defmodule Day2 do
   end
 
   def part2(input) do
-    pairs = input |> Enum.flat_map(fn x -> input |> Enum.map(fn y -> { x, y } end) end)
+    # Generete pairs of charlists. We generate too many ({x,x} and {x,y}/{y,x} are included),
+    # but it doesn't matter.
+    charlists = input |> Enum.map(&to_charlist/1)
+    pairs = charlists |> Enum.flat_map(fn x -> charlists |> Enum.map(fn y -> { x, y } end) end)
+
+    # Find the first pair where the difference is one character
     {a, b} = pairs |> Enum.find(nil, &differ_by_one_char/1)
-    t1 = to_charlist(a)
-    t2 = to_charlist(b)
-    zipped = Enum.zip(t1, t2)
-    common = zipped |> Enum.filter(fn {a, b} -> a == b end) |> Enum.map(fn {a, _} -> a end)
-    # TODO: interesect_lists doesn't preserve order, fix it!
-    #common_chars = Utils.intersect_lists(t1, t2)
+
+    # Find same characters - we cannot use Utils.interesect_lists as it 1) only returns unique
+    # characters and 2) doesn't return them in order.
+    common = Enum.zip(a, b) |> Enum.filter(fn {a, b} -> a == b end) |> Enum.map(fn {a, _} -> a end)
+
     to_string(common)
   end
 
-  defp differ_by_one_char(tup) do
-    {a, b} = tup
-    chars_a = to_charlist(a)
-    chars_b = to_charlist(b)
-    zipped = Enum.zip(chars_a, chars_b)
-    diff_count = zipped |> Enum.count(fn {x, y} -> x != y end)
+  defp differ_by_one_char({a, b}) do
+    diff_count = Enum.zip(a, b) |> Enum.count(fn {x, y} -> x != y end)
     diff_count == 1
   end
 end
