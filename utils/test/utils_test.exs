@@ -2,10 +2,6 @@ defmodule UtilsTest do
   use ExUnit.Case
   doctest Utils
 
-  test "by_frequency" do
-    assert Utils.by_frequency('aabccc') == %{2 => ?a, 1 => ?b, 3 => ?c}
-  end
-
   test "readlines reads lines, stripping whitespace" do
     lines = Utils.readlines("test/lines.txt")
     assert lines == ["1", "2", "3"]
@@ -18,11 +14,6 @@ defmodule UtilsTest do
 
   test "to_tuples_via_regex" do
     assert Utils.to_tuples_via_regex(["a,c", "d,e"], ~r/(.*),(.*)/) == [{"a", "c"}, {"d", "e"}]
-  end
-
-  test "intersect_lists" do
-    assert Utils.intersect_lists([1, 2, 3], [2, 3, 4]) == [2, 3]
-    assert Utils.intersect_lists([1, 2, 3], [4, 5, 6]) == []
   end
 
   test "shortest_distance given a single edge" do

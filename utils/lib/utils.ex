@@ -22,10 +22,32 @@ defmodule Utils do
       end)
   end
 
+
+  @doc ~S"""
+  Intersects two lists. Multiple elements are only returned once. Order is undefined.
+
+  ## Examples
+
+      iex> Utils.intersect_lists([1, 2, 3], [2, 3, 4])
+      [2, 3]
+
+      iex> Utils.intersect_lists([1, 2, 3], [4, 5, 6])
+      []
+
+  """
   def intersect_lists(list1, list2) do
     MapSet.intersection(Enum.into(list1, MapSet.new), Enum.into(list2, MapSet.new)) |> MapSet.to_list
   end
 
+  @doc ~S"""
+  Groups by frequency. Frequencies become keys in the returned map.
+
+  ## Examples
+
+      iex> Utils.by_frequency('abbccc')
+      %{1 => ?a, 2 => ?b, 3 => ?c}
+
+  """
   def by_frequency(enumerable) do
     Enum.group_by(enumerable, fn e1 -> Enum.count(enumerable, fn e2 -> e1 == e2 end) end)
       |> Enum.map(fn {k, v} -> {k, hd v} end)
