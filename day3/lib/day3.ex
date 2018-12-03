@@ -1,24 +1,22 @@
 defmodule Day3 do
 
   def part1(patches) do
-    new_grid = Enum.reduce(patches, %{}, fn patch, grid ->
+    # Expand all patch coordinates, {x, y}
+    patch_coords = patches |> Enum.flat_map(fn patch ->
       {_, left, top, width, height} = patch
-      patch_coords = coords(left, top, width, height)
-      Enum.reduce(patch_coords, grid, fn coord, g ->
-        cur = g[coord]
-        counter = if cur == nil, do: 1, else: cur + 1
-        Map.put(g, coord, counter)
-      end)
+      coords(left, top, width, height)
     end)
 
-    # count coords where the count is > 1
-    result = Enum.count(new_grid, fn {_, v} -> v > 1 end)
-
-    result
+    # Group by coordinate and count groups where a coordinate occurs more than one time.
+    # The coordinate of such a group is overlapped by more than one patch.
+    patch_coords
+      |> Enum.group_by(fn c -> c end)
+      |> Enum.filter(fn {_, v} -> length(v) > 1 end)
+      |> length
   end
 
   defp coords(left, top, width, height) do
-    left..(left + width - 1) |> Enum.flat_map(fn x -> top..(top + height - 1) |> Enum.map(fn y -> {x, y} end) end)
+    for x <- left..(left + width - 1), y <- top..(top + height - 1), do: {x, y}
   end
 
   def part2(patches) do
