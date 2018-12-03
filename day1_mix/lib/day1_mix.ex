@@ -13,27 +13,9 @@ defmodule Day1Mix do
     # Accumulate the sum of elements (frequencies)
     accumulated = inf |> Stream.transform(0, fn i, acc -> {[acc], acc + i} end)
 
-    # Stop the stream as soon as we find the first duplicate number. We use a transform
-    # for this, with a MapSet as the accumulator. We don't halt when we see the first
-    # duplicate, because then it won't be emitted. Instead we do one more "round" so that
-    # the final stream ends with the first duplicate number.
-    until_dup = accumulated |> Stream.transform(MapSet.new(), fn i, set ->
-      cond do
-        set === :halt ->
-          {:halt, nil}
-        MapSet.member?(set, i) ->
-          # we want this element, so don't halt yet.
-          # pass :halt as acc to halt next round.
-          {[i], :halt}
-        true ->
-          {[i], MapSet.put(set, i)}
-      end
+    # Find and return the first duplicate
+    accumulated |> Enum.reduce_while(MapSet.new(), fn x, seen ->
+      if MapSet.member?(seen, x), do: {:halt, x}, else: {:cont, MapSet.put(seen, x)}
     end)
-
-    # Enum.take with negative number takes from the end
-    first_dup = Enum.take(until_dup, -1)
-
-    # Return the head of the result (which is a list of 1 element)
-    hd first_dup
   end
 end
