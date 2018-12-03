@@ -10,13 +10,7 @@ defmodule Day3Test do
   end
 
   test "part1" do
-    lines = Utils.readlines("input")
-    patches = Utils.to_tuples_via_regex(lines, ~r/#([0-9]+) @ ([0-9]+),([0-9]+): ([0-9]+)x([0-9]+)/)
-    numeric = patches |> Enum.map(fn p ->
-      {id, l, t, w, h} = p
-      {id, String.to_integer(l), String.to_integer(t), String.to_integer(w), String.to_integer(h)}
-    end)
-    assert Day3.part1(numeric) == 116140
+    assert Day3.part1(read_patches()) == 116140
   end
 
   test "part2 examples" do
@@ -27,12 +21,15 @@ defmodule Day3Test do
   end
 
   test "part2" do
+    assert Day3.part2(read_patches()) == ["574"]
+  end
+
+  defp read_patches do
     lines = Utils.readlines("input")
     patches = Utils.to_tuples_via_regex(lines, ~r/#([0-9]+) @ ([0-9]+),([0-9]+): ([0-9]+)x([0-9]+)/)
-    numeric = patches |> Enum.map(fn p ->
+    patches |> Enum.map(fn p ->
       {id, l, t, w, h} = p
       {id, String.to_integer(l), String.to_integer(t), String.to_integer(w), String.to_integer(h)}
     end)
-    assert Day3.part2(numeric) == ["574"]
   end
 end
