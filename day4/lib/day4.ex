@@ -46,6 +46,26 @@ defmodule Day4 do
     numeric_id * most_minute
   end
 
+  def part2(lines) do
+    sorted_records = lines
+      |> Enum.map(fn line -> Record.parse(line) end)
+      |> Enum.sort(fn a, b -> NaiveDateTime.compare(a.timestamp, b.timestamp) == :lt end)
+
+    # Find the guard that has the most minutes asleep.
+    # What minute does that guard spend asleep the most?
+    {_, _, guard_by_id} = Enum.reduce(sorted_records, {nil, nil, %{}}, &track/2)
+
+    # Create tuples of {guard_id, minute} and then group by frequency
+    tuples = guard_by_id |> Enum.flat_map(fn {_, g} -> g.minutes_asleep |> Enum.map(fn m -> {g.id, m} end) end)
+
+    by_freq = Utils.by_frequency(tuples)
+    {_, {id, m}} = by_freq |> Enum.max_by(fn {k, _} -> k end)
+
+    numeric_id = String.to_integer(id)
+
+    numeric_id * m
+  end
+
   defp track(record, {current_guard_id, sleep_minute, guard_by_id}) do
     cond do
       record.action == :new_guard ->
