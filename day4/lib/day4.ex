@@ -17,7 +17,7 @@ defmodule Day4 do
   end
 
   defmodule Guard do
-    defstruct id: nil, minutes_asleep: nil
+    defstruct id: 0, minutes_asleep: []
 
     def new(id) do
       %Guard{id: id, minutes_asleep: []}
@@ -26,54 +26,61 @@ defmodule Day4 do
     def with_minutes(guard, minutes) do
       %Guard{id: guard.id, minutes_asleep: guard.minutes_asleep ++ minutes}
     end
+
+    def most_frequent_sleep_minute(guard) do
+      Utils.by_frequency(guard.minutes_asleep)
+        |> Enum.max_by(fn {k, _} -> k end)
+        |> elem(1)
+    end
   end
 
   def part1(lines) do
-    sorted_records = lines
-      |> Enum.map(fn line -> Record.parse(line) end)
-      |> Enum.sort(fn a, b -> NaiveDateTime.compare(a.timestamp, b.timestamp) == :lt end)
+    slept_the_most = lines
+      |> parse_lines()
+      |> arrange_guards_by_id()
+      |> Enum.max_by(fn {_, g} -> length(g.minutes_asleep) end)
+      |> elem(1)
 
-    # Find the guard that has the most minutes asleep.
-    # What minute does that guard spend asleep the most?
-    {_, _, guard_by_id} = Enum.reduce(sorted_records, {nil, nil, %{}}, &track/2)
-
-    {_, slept_the_most} = guard_by_id |> Enum.max_by(fn {_, g} -> length(g.minutes_asleep) end)
-
-    numeric_id = String.to_integer(slept_the_most.id)
-
-    minutes_by_freq = Utils.by_frequency(slept_the_most.minutes_asleep)
-    {_, most_minute} = minutes_by_freq |> Enum.max_by(fn {k, _} -> k end)
-    numeric_id * most_minute
+    slept_the_most.id * Guard.most_frequent_sleep_minute(slept_the_most)
   end
 
   def part2(lines) do
-    sorted_records = lines
+    # Create tuples of {guard_id, minute}
+    tuples = lines
+      |> parse_lines()
+      |> arrange_guards_by_id()
+      |> Enum.flat_map(fn {_, g} -> g.minutes_asleep |> Enum.map(fn m -> {g.id, m} end) end)
+
+    # Group by frequency and find the tuple with the highest frequency
+    {id, m} = tuples
+      |> Utils.by_frequency
+      |> Enum.max_by(fn {k, _} -> k end)
+      |> elem(1)
+
+    id * m
+  end
+
+  defp arrange_guards_by_id(sorted_records) do
+    {_, _, guard_by_id} = Enum.reduce(sorted_records, {nil, nil, %{}}, &track/2)
+    guard_by_id
+  end
+
+  defp parse_lines(lines) do
+    lines
       |> Enum.map(fn line -> Record.parse(line) end)
       |> Enum.sort(fn a, b -> NaiveDateTime.compare(a.timestamp, b.timestamp) == :lt end)
-
-    # Find the guard that has the most minutes asleep.
-    # What minute does that guard spend asleep the most?
-    {_, _, guard_by_id} = Enum.reduce(sorted_records, {nil, nil, %{}}, &track/2)
-
-    # Create tuples of {guard_id, minute} and then group by frequency
-    tuples = guard_by_id |> Enum.flat_map(fn {_, g} -> g.minutes_asleep |> Enum.map(fn m -> {g.id, m} end) end)
-
-    by_freq = Utils.by_frequency(tuples)
-    {_, {id, m}} = by_freq |> Enum.max_by(fn {k, _} -> k end)
-
-    numeric_id = String.to_integer(id)
-
-    numeric_id * m
   end
 
   defp track(record, {current_guard_id, sleep_minute, guard_by_id}) do
     cond do
       record.action == :new_guard ->
         guard = guard_by_id[record.guard_id]
-        gbi = if guard == nil, do: Map.put(guard_by_id, record.guard_id, Guard.new(record.guard_id)), else: guard_by_id
+        gbi = if guard == nil, do: Map.put(guard_by_id, record.guard_id, Guard.new(String.to_integer(record.guard_id))), else: guard_by_id
         {record.guard_id, nil, gbi}
+
       record.action == :falls_asleep ->
         {current_guard_id, record.timestamp.minute, guard_by_id}
+
       record.action == :wakes_up ->
         minutes_slept = Enum.to_list sleep_minute..(record.timestamp.minute - 1)
         guard = guard_by_id[current_guard_id]
