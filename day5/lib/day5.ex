@@ -15,9 +15,7 @@ defmodule Day5 do
     if eqln(polymer, new_polymer), do: new_polymer, else: react(new_polymer)
   end
 
-  defp react_one([]) do
-    []
-  end
+  defp react_one([]) do [] end
   defp react_one(polymer) do
     rem1 = remove_diff_pol(polymer)
     if eqln(rem1, polymer) do
@@ -47,18 +45,22 @@ defmodule Day5 do
   end
 
   defp different_polarity(a, b) do
-    a != b && String.upcase(to_string([a])) == String.upcase(to_string([b]))
+    a != b && same_letter_different_case(a, b)
   end
 
-  defp same_polarity(a, b) do
-    a == b || String.upcase(to_string([a])) == String.upcase(to_string([b]))
+  defp same_letter_ignore_case(a, b) do
+    a == b || same_letter_different_case(a, b)
+  end
+
+  defp same_letter_different_case(a, b) do
+    if a > b, do: a - 32 == b, else: b - 32 == a
   end
 
   def part2(polymer) do
     chlist = String.to_charlist(polymer)
     unit_types = chlist |> Enum.map(fn u -> hd String.to_charlist(String.upcase(to_string([u]))) end) |> MapSet.new()
     all_reacted = unit_types |> Enum.map(fn u ->
-      new_p = Enum.reject(chlist, fn x -> same_polarity(u, x) end)
+      new_p = Enum.reject(chlist, fn x -> same_letter_ignore_case(u, x) end)
       part1_str(to_string(new_p))
     end)
     min_one = all_reacted |> Enum.min_by(fn r -> String.length(r) end)
