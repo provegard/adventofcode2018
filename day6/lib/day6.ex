@@ -1,7 +1,20 @@
 defmodule Day6 do
+
+  def part2(coordinates, upper_bound) do
+    bounds = find_bounds(coordinates)
+    map_coords = for x <- (bounds[:left])..(bounds[:right]), y <- (bounds[:top])..(bounds[:bottom]), do: {x, y}
+
+    map_coords_with_less_dist = Enum.filter(map_coords, fn c ->
+      total_dist_to_all = coordinates
+        |> Enum.map(fn x -> manhattan(x, c) end)
+        |> Enum.sum()
+      total_dist_to_all < upper_bound
+    end)
+
+    Enum.count(map_coords_with_less_dist)
+  end
+
   def part1(coordinates) do
-    # idea: consider only coords that are "inner"
-    # how??
     bounds = find_bounds(coordinates)
 
     map = mark(coordinates, bounds)
