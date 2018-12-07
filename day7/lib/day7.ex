@@ -8,20 +8,18 @@ defmodule Day7 do
     walk(edges, sources, MapSet.new())
   end
 
-  defp new_worker(step, time) do
-    %{:current => step, :time_left => time}
-  end
+  defmodule Worker do
+    defstruct current: nil, time_left: 0
 
-  defp do_work(worker, time) do
-    if worker[:current] == nil do
-      worker
-    else
-      %{:current => worker[:current], :time_left => worker[:time_left] - time}
-    end
-  end
-
-  defp give_step_to_worker(step, time_per_step) do
-    new_worker(step, time_per_step[step])
+    def waiting(), do: %Worker{}
+    def work(%Worker{time_left: 0} = w), do: w
+    def work(%Worker{time_left: t} = w), do:
+        %{w | time_left: t - 1}
+    def collect(%Worker{current: nil} = w), do: w
+    def collect(%Worker{current: c}), do: {Worker.waiting(), c}
+    def start_working(step, time), do: %Worker{current: step, time_left: time}
+    def free?(w), do: w.current == nil
+    def done?(w), do: w.time_left == 0
   end
 
   def part2(instructions, extra_step_time, worker_count) do
@@ -30,75 +28,75 @@ defmodule Day7 do
     steps = edges |> Enum.flat_map(fn {f, t} -> [f, t] end) |> Enum.uniq()
     time_per_step = steps |> Enum.map(fn s -> {s, time_for(s, extra_step_time)} end) |> Map.new()
 
-    worker_pool = for _ <- 1..worker_count, do: new_worker(nil, 0)
+    workers = for _ <- 1..worker_count, do: Worker.waiting()
+    worker_factory = &(Worker.start_working(&1, time_per_step[&1]))
+    is_done = &(all_done?(&1, steps))
 
-    tick(-1, time_per_step, worker_pool, edges, MapSet.new(), steps)
+    tick(-1, workers, worker_factory, edges, MapSet.new(), is_done)
   end
 
-  def tick(old_time, time_per_step, worker_pool, edges, done, all_steps) do
+  def tick(old_time, workers, worker_factory, edges, done, is_done?) do
     this_time = old_time + 1
 
     # Check workers that are done
-    {new_workers, new_done} = worker_pool |> Enum.map_reduce(done, fn w, d ->
-      if w[:time_left] == 0 and not is_free(w) do
-        step = w[:current]
-        nd = MapSet.put(d, step)
-        w2 = new_worker(nil, 0)
-        {w2, nd}
+    {workers_, done_} = workers |> collect_done_steps(done)
+
+    # Have all steps been completed?
+    if is_done?.(done_) do
+      this_time
+    else
+      # Work work work!
+      workers__ = workers_
+        |> assign_work(edges, done_, worker_factory)
+        |> let_workers_work()
+
+      # Advance time
+      tick(this_time, workers__, worker_factory, edges, done_, is_done?)
+    end
+  end
+
+  defp collect_done_steps(workers, done) do
+    workers |> Enum.map_reduce(done, fn w, d ->
+      if Worker.done?(w) and not Worker.free?(w) do
+        {w_, done_step} = Worker.collect(w)
+        {w_, MapSet.put(d, done_step)}
       else
         {w, d}
       end
     end)
-
-    if all_done(new_done, all_steps) do
-      this_time
-    else
-      # 1. Give work to free workers
-      new_workers = assign_work_to_workers(edges, new_done, new_workers, time_per_step)
-
-      # 2. Let workers work
-      new_workers = let_workers_work(new_workers)
-
-      tick(this_time, time_per_step, new_workers, edges, new_done, all_steps)
-    end
   end
 
-  defp assign_work_to_workers(edges, done, workers, time_per_step) do
-    free_count = workers |> Enum.count(&is_free/1)
-    pieces_of_work = take_from_queue(edges, done, workers, free_count)
+  defp assign_work(workers, edges, done, worker_factory) do
+    next_steps = workers
+      |> Enum.count(&(Worker.free?/1))
+      |> take_steps(workers, edges, done)
 
-    {busy_workers, _} = workers |> Enum.map_reduce(pieces_of_work, fn w, pieces ->
-      if is_free(w) and length(pieces) > 0 do
-        [piece | rest] = pieces
-        w2 = give_step_to_worker(piece, time_per_step)
-        {w2, rest}
-      else
-        {w, pieces}
-      end
-    end)
+    {busy_workers, _} = workers
+      |> Enum.map_reduce(next_steps, fn w, steps ->
+        if Worker.free?(w) and length(steps) > 0 do
+          [step | rest] = steps
+          {worker_factory.(step), rest}
+        else
+          {w, steps}
+        end
+      end)
     busy_workers
   end
 
-  defp take_from_queue(edges, done, workers, count) do
-    calculate_queue(edges, done, workers) |> Enum.take(count)
+  defp take_steps(count, workers, edges, done) do
+    available_steps(workers, edges, done) |> Enum.take(count)
   end
 
-  defp calculate_queue(edges, done, workers) do
+  defp available_steps(workers, edges, done) do
     queue = all_next_nodes_given_done(edges, done) |> Enum.uniq() |> sort_nodes()
-    being_worked_on = workers |> Enum.reject(&is_free/1) |> Enum.map(fn w -> w[:current] end)
+    being_worked_on = workers |> Enum.reject(&(Worker.free?/1)) |> Enum.map(fn w -> w.current end)
     queue -- being_worked_on
   end
 
-  defp let_workers_work(workers) do
-    workers |> Enum.map(fn w -> do_work(w, 1) end)
-  end
+  defp let_workers_work(workers), do: workers |> Enum.map(&(Worker.work/1))
 
-  defp all_done(done_ms, steps_list) do
+  defp all_done?(done_ms, steps_list) do
     Enum.all?(steps_list, fn s -> MapSet.member?(done_ms, s) end)
-  end
-
-  defp is_free(worker) do
-    worker[:current] == nil
   end
 
   defp time_for(s, extra) do
