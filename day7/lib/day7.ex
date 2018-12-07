@@ -25,28 +25,18 @@ defmodule Day7 do
   end
 
   def part2(instructions, extra_step_time, worker_count) do
-    #IO.inspect "*************** BEGIN"
     # Each tuple is edge {from, to}
-    edges = instructions
-      |> parse_instructions()
+    edges = instructions |> parse_instructions()
     steps = edges |> Enum.flat_map(fn {f, t} -> [f, t] end) |> Enum.uniq()
-    #IO.inspect steps, label: "All steps"
     time_per_step = steps |> Enum.map(fn s -> {s, time_for(s, extra_step_time)} end) |> Map.new()
-    #sources = find_starting_points(edges) |> Enum.uniq() |> sort_nodes()
 
     worker_pool = for _ <- 1..worker_count, do: new_worker(nil, 0)
 
-    tick(-1, 1, time_per_step, worker_pool, edges, MapSet.new(), steps)
+    tick(-1, time_per_step, worker_pool, edges, MapSet.new(), steps)
   end
 
-  def tick(old_time, advance_by, time_per_step, worker_pool, edges, done, all_steps) do
-
-    #IO.inspect step_queue, label: "Q #{old_time}:"
-    if advance_by == 0, do: raise "time stands still"
-    this_time = old_time + advance_by
-    #IO.inspect this_time, label: "========== TIME"
-
-    #if old_time > 16, do: raise "stop"
+  def tick(old_time, time_per_step, worker_pool, edges, done, all_steps) do
+    this_time = old_time + 1
 
     # Check workers that are done
     {new_workers, new_done} = worker_pool |> Enum.map_reduce(done, fn w, d ->
@@ -60,40 +50,22 @@ defmodule Day7 do
       end
     end)
 
-    #IO.inspect new_workers, label: "workers after checking done"
-    #IO.inspect new_done, label: "done after checking done"
-
-    #if this_time > 20, do: raise "?????????"
-
     if all_done(new_done, all_steps) do
-      this_time #TODO: Or old??
+      this_time
     else
-
-
       # 1. Give work to free workers
       new_workers = assign_work_to_workers(edges, new_done, new_workers, time_per_step)
 
-      #IO.inspect new_workers, label: "workers after giving work"
-      #IO.inspect new_done, label: "done after giving work"
-
       # 2. Let workers work
-      # {new_workers, new_done} = let_workers_work(new_workers, new_done)
       new_workers = let_workers_work(new_workers)
 
-      # Give more work to now free workers!?
-
-      #IO.inspect new_workers, label: "workers after work"
-      #IO.inspect new_done, label: "done after work"
-
-      tick(this_time, advance_by, time_per_step, new_workers, edges, new_done, all_steps)
+      tick(this_time, time_per_step, new_workers, edges, new_done, all_steps)
     end
   end
 
   defp assign_work_to_workers(edges, done, workers, time_per_step) do
     free_count = workers |> Enum.count(&is_free/1)
-    #IO.inspect free_count, label: "free workers"
     pieces_of_work = take_from_queue(edges, done, workers, free_count)
-    #IO.inspect pieces_of_work, label: "pieces_of_work"
 
     {busy_workers, _} = workers |> Enum.map_reduce(pieces_of_work, fn w, pieces ->
       if is_free(w) and length(pieces) > 0 do
@@ -113,7 +85,6 @@ defmodule Day7 do
 
   defp calculate_queue(edges, done, workers) do
     queue = all_next_nodes_given_done(edges, done) |> Enum.uniq() |> sort_nodes()
-    #IO.inspect queue, label: "Queue"
     being_worked_on = workers |> Enum.reject(&is_free/1) |> Enum.map(fn w -> w[:current] end)
     queue -- being_worked_on
   end
