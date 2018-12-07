@@ -1,2 +1,3 @@
 *.beam
 .elixir_ls/
+node_modules/
