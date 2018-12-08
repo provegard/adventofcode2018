@@ -1,4 +1,5 @@
 const utils = require("../utils_js/utils");
+//const Iterator = utils.Iterator;
 
 class Node {
     constructor(children, metadataEntries) {

@@ -39,26 +39,26 @@ function zipWithIndex(arr) {
 
 const Iterator =
   {
-    map: (f, it) => function* ()
-    {
+    map: (f, it) => function* () {
         for (const x of it)
             yield f(x);
     }(),
-    filter: (f, it) => function* ()
-    {
+    filter: (f, it) => function* () {
         for (const x of it)
             if (f(x)) yield x;
     }(),
-    reject: (f, it) => function* ()
-    {
+    reject: (f, it) => function* () {
         for (const x of it)
             if (!f(x)) yield x;
     }(),
+    flatMap: (f, it) => function* () {
+        for (const x of it)
+            for (const y of f(x))
+                yield y;
+    }(),
   };
 
-// a generator !
-function* range(x = 0, y = 1)
-{
+function* range(x = 0, y = 1) {
     while (x < y)
         yield x++;
 };

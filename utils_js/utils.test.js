@@ -64,6 +64,14 @@ describe("utils", () => {
             });
         });
 
+        describe("flatMap", () => {
+            it("can map flatly", () => {
+                const repeat = (x) => [x, x];
+                const result = Iterator.flatMap(repeat, utils.range(0, 3));
+                expect(Array.from(result)).toEqual([0, 0, 1, 1, 2, 2]);
+            });
+        });
+
         describe("filter", () => {
             it("can filter", () => {
                 const isEven = (x) => x % 2 == 0;
