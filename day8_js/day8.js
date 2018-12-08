@@ -1,5 +1,5 @@
 const utils = require("../utils_js/utils");
-//const Iterator = utils.Iterator;
+const Iterator = utils.Iterator;
 
 class Node {
     constructor(children, metadataEntries) {
@@ -8,14 +8,8 @@ class Node {
     }
 
     sumMetadataEntries() {
-        let sum = 0;
-        for (const entry of this.metadataEntries) {
-            sum += entry;
-        }
-        for (const child of this.children) {
-            sum += child.sumMetadataEntries();
-        }
-        return sum;
+        return this.metadataEntries.reduce((s, e) => s + e, 0) +
+            this.children.reduce((s, c) => s + c.sumMetadataEntries(), 0);
     }
 
     sumMetadataEntriesAsIndexes() {
@@ -23,28 +17,25 @@ class Node {
             return this.sumMetadataEntries();
         }
 
-        let sum = 0;
-        for (const indexBase1 of this.metadataEntries) {
-            if (indexBase1 === 0) continue;
+        return this.metadataEntries.reduce((s, indexBase1) => {
+            if (indexBase1 === 0) return s;
             const child = this.children[indexBase1 - 1];
-            if (!child) continue;
-            sum += child.sumMetadataEntriesAsIndexes();
-        }
-        return sum;
+            if (!child) return s;
+            return s + child.sumMetadataEntriesAsIndexes();
+        }, 0);
     }
 }
 
 function readNode(numbers) {
     const childCount = numbers.shift();
     const metadataCount = numbers.shift();
-    const children = [];
-    for (let i = 0; i < childCount; i++) {
-        children.push(readNode(numbers));
-    }
-    const metadataEntries = [];
-    for (let i = 0; i < metadataCount; i++) {
-        metadataEntries.push(numbers.shift());
-    }
+
+    const children = Array.from(
+        Iterator.map(() => readNode(numbers),
+        utils.range(0, childCount)));
+    const metadataEntries = Array.from(
+        Iterator.map(() => numbers.shift(),
+        utils.range(0, metadataCount)));
     return new Node(children, metadataEntries);
 }
 
