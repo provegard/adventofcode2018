@@ -37,11 +37,39 @@ function zipWithIndex(arr) {
     return Array.from(zipWithIndexInternal(arr));
 }
 
+const Iterator =
+  {
+    map: (f, it) => function* ()
+    {
+        for (const x of it)
+            yield f(x);
+    }(),
+    filter: (f, it) => function* ()
+    {
+        for (const x of it)
+            if (f(x)) yield x;
+    }(),
+    reject: (f, it) => function* ()
+    {
+        for (const x of it)
+            if (!f(x)) yield x;
+    }(),
+  };
+
+// a generator !
+function* range(x = 0, y = 1)
+{
+    while (x < y)
+        yield x++;
+};
+
 module.exports = {
     flatMap,
     max,
     min,
     readLines,
     zip,
-    zipWithIndex
+    zipWithIndex,
+    range,
+    Iterator
 }

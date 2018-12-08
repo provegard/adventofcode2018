@@ -41,4 +41,43 @@ describe("utils", () => {
             expect(result).toEqual([[1, 0], [2, 1], [3, 2]]);
         });
     });
+
+    describe("range", () => {
+        it("by default emits 0", () => {
+            const arr = Array.from(utils.range());
+            expect(arr).toEqual([0]);
+        });
+
+        it("can emit a range", () => {
+            const arr = Array.from(utils.range(1, 5));
+            expect(arr).toEqual([1, 2, 3, 4]);
+        });
+    });
+
+    describe("Iterator", () => {
+        const Iterator = utils.Iterator;
+        describe("map", () => {
+            it("can map", () => {
+                const square = (x) => x * x;
+                const result = Iterator.map(square, utils.range(0, 4));
+                expect(Array.from(result)).toEqual([0, 1, 4, 9]);
+            });
+        });
+
+        describe("filter", () => {
+            it("can filter", () => {
+                const isEven = (x) => x % 2 == 0;
+                const result = Iterator.filter(isEven, utils.range(0, 5));
+                expect(Array.from(result)).toEqual([0, 2, 4]);
+            });
+        });
+
+        describe("reject", () => {
+            it("can reject", () => {
+                const isEven = (x) => x % 2 == 0;
+                const result = Iterator.reject(isEven, utils.range(0, 5));
+                expect(Array.from(result)).toEqual([1, 3]);
+            });
+        });
+    });
 });
