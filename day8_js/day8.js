@@ -16,6 +16,21 @@ class Node {
         }
         return sum;
     }
+
+    sumMetadataEntriesAsIndexes() {
+        if (this.children.length === 0) {
+            return this.sumMetadataEntries();
+        }
+
+        let sum = 0;
+        for (const indexBase1 of this.metadataEntries) {
+            if (indexBase1 === 0) continue;
+            const child = this.children[indexBase1 - 1];
+            if (!child) continue;
+            sum += child.sumMetadataEntriesAsIndexes();
+        }
+        return sum;
+    }
 }
 
 function readNode(numbers) {
@@ -42,4 +57,10 @@ function part1(numberString) {
     return tree.sumMetadataEntries();
 }
 
-module.exports = { part1 };
+function part2(numberString) {
+    const numbers = numberString.split(" ").map((n) => parseInt(n));
+    const tree = buildTree(numbers);
+    return tree.sumMetadataEntriesAsIndexes();
+}
+
+module.exports = { part1, part2 };
