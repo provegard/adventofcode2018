@@ -63,6 +63,21 @@ function* range(x = 0, y = 1) {
         yield x++;
 };
 
+function measureAvgMs(fn, count = 100) {
+    if (count < 10) throw new Error("Need at least 10 iterations");
+    let totNs = 0;
+    for (let i = 0; i < count; i++) {
+        const start = process.hrtime();
+        fn();
+        const [s, ns] = process.hrtime(start);
+        // Let the first three be warmup
+        if (i > 2) {
+            totNs += s * 1e9 + ns;
+        }
+    }
+    return totNs / 1e6 / count;
+}
+
 module.exports = {
     flatMap,
     max,
@@ -71,5 +86,6 @@ module.exports = {
     zip,
     zipWithIndex,
     range,
-    Iterator
+    Iterator,
+    measureAvgMs
 }
