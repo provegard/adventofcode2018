@@ -46,6 +46,7 @@ defmodule Day6 do
   end
 
   defp mark(all, bounds) do
+    # Mark one outside the bounds, to detect infinite areas
     map_coords = for x <- (bounds[:left]-1)..(bounds[:right]+1), y <- (bounds[:top]-1)..(bounds[:bottom]+1), do: {x, y}
     map_coords |> Enum.reduce(%{}, fn {x, y}, map ->
       c = {x, y}
@@ -79,15 +80,7 @@ defmodule Day6 do
     end)
   end
 
-  defp min_of(cur, x) do
-    if cur == nil, do: x, else: min(cur, x)
-  end
-
-  defp max_of(cur, x) do
-    if cur == nil, do: x, else: max(cur, x)
-  end
-
-  defp manhattan({x, y}, {u, v}) do
-    abs(x - u) + abs(y - v)
-  end
+  defp min_of(cur, x), do: if cur == nil, do: x, else: min(cur, x)
+  defp max_of(cur, x), do: if cur == nil, do: x, else: max(cur, x)
+  defp manhattan({x, y}, {u, v}), do: abs(x - u) + abs(y - v)
 end
