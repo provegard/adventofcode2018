@@ -39,20 +39,17 @@ function readNode(numbers) {
     return new Node(children, metadataEntries);
 }
 
-function buildTree(numbers) {
+function buildTree(numberString) {
+    const numbers = numberString.split(" ").map((n) => parseInt(n));
     return readNode(numbers);
 }
 
 function part1(numberString) {
-    const numbers = numberString.split(" ").map((n) => parseInt(n));
-    const tree = buildTree(numbers);
-    return tree.sumMetadataEntries();
+    return buildTree(numberString).sumMetadataEntries();
 }
 
 function part2(numberString) {
-    const numbers = numberString.split(" ").map((n) => parseInt(n));
-    const tree = buildTree(numbers);
-    return tree.sumMetadataEntriesAsIndexes();
+    return buildTree(numberString).sumMetadataEntriesAsIndexes();
 }
 
 module.exports = { part1, part2 };
