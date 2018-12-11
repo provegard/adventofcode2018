@@ -18,14 +18,14 @@ defmodule Day11Test do
     assert Day11.part1(2694) == {243, 38, 30}
   end
 
-  @tag timeout: 600000
+  @tag timeout: 3600000
   test "part 2 examples" do
     assert Day11.part2(18) == {90, 269, 16, 113}
-    #assert Day11.part1(42) == {232, 251, 12, 119}
+    assert Day11.part1(42) == {232, 251, 12, 119}
   end
 
-  @tag timeout: 600000
+  @tag timeout: 3600000
   test "part 2" do
-    assert Day11.part2(2694) == nil
+    assert Day11.part2(2694) == {235, 146, 13, 96}
   end
 end
