@@ -21,10 +21,7 @@ defmodule Day11Test do
 
   @tag timeout: 3600000
   test "part 2 examples" do
-    profile do
-      Day11.part2(18)
-    end
-    #assert Day11.part2(18) == {90, 269, 16, 113}
+    assert Day11.part2(18) == {90, 269, 16, 113}
     #assert Day11.part2(42) == {232, 251, 12, 119}
   end
 
