@@ -11,13 +11,25 @@ defmodule Day11 do
     top_lefts |> Enum.map(fn {x, y} -> find_power(x, y, 3, serial) end) |> Enum.max_by(fn {_, _, p} -> p end)
   end
 
-  defp find_power(a, b, size, serial) do
+  def find_power(a, b, size, serial) do
     coords = for x <- a..(a+(size-1)), y <- b..(b+(size-1)), do: {x, y}
     total_power = coords |> Enum.reduce(0, fn {x, y}, sum -> sum + power_level(x, y, serial) end)
     {a, b, total_power}
   end
 
-  defp find_power_rec(a, b, size, serial, cache) do
+  def grid_at(x, y, size, serial) do
+    rows = y..(y+size-1) |> Enum.map(fn y_ ->
+      powers = x..(x+size - 1)
+        |> Enum.map(fn x_ -> power_level(x_, y_, serial) end)
+        |> Enum.map(fn p -> to_string(p) end)
+        |> Enum.map(fn s -> String.pad_leading(s, 2) end)
+        |> Enum.join(" ")
+      powers
+    end)
+    "\r\n" <> Enum.join(rows, "\r\n")
+  end
+
+  def find_power_rec(a, b, size, serial, cache) do
     key = {a, b, size}
     cached = cache[key]
     if cached == nil do
@@ -40,8 +52,8 @@ defmodule Day11 do
           {power_level(a, b, serial), cache}
         else
           # calculate edge
-          edge_sum = b..(b+size-1) |> Enum.reduce(0, fn b_, sum -> sum + power_level(a, b_, serial) end)
-          edge_sum = edge_sum + (a..(a+size-1) |> Enum.reduce(0, fn a_, sum -> sum + power_level(a_, b, serial) end))
+          edge_sum = b..(b+size-1) |> Enum.reduce(0, fn b_, sum -> sum + power_level(a+size-1, b_, serial) end)
+          edge_sum = edge_sum + (a..(a+size-1) |> Enum.reduce(0, fn a_, sum -> sum + power_level(a_, b+size-1, serial) end))
           bottom_right_power = power_level(a+size-1, b+size-1, serial)
           edge_sum = edge_sum - bottom_right_power # remove bottom-right counted twice
 
