@@ -1,5 +1,6 @@
 defmodule Day11Test do
   use ExUnit.Case
+  import ExProf.Macro
   doctest Day11
 
   test "power level" do
@@ -20,8 +21,11 @@ defmodule Day11Test do
 
   @tag timeout: 3600000
   test "part 2 examples" do
-    assert Day11.part2(18) == {90, 269, 16, 113}
-    #assert Day11.part1(42) == {232, 251, 12, 119}
+    profile do
+      Day11.part2(18)
+    end
+    #assert Day11.part2(18) == {90, 269, 16, 113}
+    #assert Day11.part2(42) == {232, 251, 12, 119}
   end
 
   @tag timeout: 3600000
