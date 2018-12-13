@@ -17,18 +17,6 @@ defmodule Day11 do
     {a, b, total_power}
   end
 
-  def grid_at(x, y, size, serial) do
-    rows = y..(y+size-1) |> Enum.map(fn y_ ->
-      powers = x..(x+size - 1)
-        |> Enum.map(fn x_ -> power_level(x_, y_, serial) end)
-        |> Enum.map(fn p -> to_string(p) end)
-        |> Enum.map(fn s -> String.pad_leading(s, 2) end)
-        |> Enum.join(" ")
-      powers
-    end)
-    "\r\n" <> Enum.join(rows, "\r\n")
-  end
-
   def find_power_rec(a, b, size, serial, cache) do
     key = {a, b, size}
     cached = cache[key]
