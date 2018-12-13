@@ -18,6 +18,6 @@ describe("part2", () => {
         const lines = utils.readLines("input");
         // 121,83 wrong
         // 121,82 wrong
-        expect(Day13.part2(lines)).toEqual([]);
+        expect(Day13.part2(lines)).toEqual([53, 111]);
     });
 });

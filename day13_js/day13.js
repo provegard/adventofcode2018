@@ -105,26 +105,20 @@ class World {
         this.carts = carts;
     }
 
-    sortCarts() {
-        this.carts.sort((a, b) => a.y - b.y || a.x - b.x);
+    findCollidingCarts(cart) {
+        return this.carts.filter((c) => c !== cart && c.collidesWith(cart));
     }
 
     *tick() {
-        this.sortCarts();
         while (this.carts.length > 1) {
             //this.print();
-            // sorted at each loop entry
-            this.carts.forEach((cart) => cart.move(this.map));
-            // sort to find collision
-            this.sortCarts();
-            let prev;
             for (const cart of this.carts) {
-                if (prev && cart.collidesWith(prev)) {
-                    prev.crashed = true;
+                cart.move(this.map);
+                for (const coll of this.findCollidingCarts(cart)) {
+                    yield [cart, coll];
                     cart.crashed = true;
-                    yield [prev, cart];
+                    coll.crashed = true;
                 }
-                prev = cart;
             }
             this.removeCrashedCarts();
         }
