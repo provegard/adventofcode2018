@@ -16,6 +16,7 @@ class Cart {
         this.y = y;
         this.turnDirection = LEFT;
         this.direction = direction;
+        this.crashed = false;
     }
 
     arrow() {
@@ -29,6 +30,7 @@ class Cart {
     }
 
     collidesWith(other) {
+        if (this.crashed || other.crashed) return false;
         return this.x === other.x && this.y === other.y;
     }
 
@@ -64,6 +66,7 @@ class Cart {
     }
 
     move(theMap) {
+        if (this.crashed) return;
         const {x, y} = this.nextPos();
         let newDir = this.direction;
         let turnDir;
@@ -108,7 +111,7 @@ class World {
 
     *tick() {
         this.sortCarts();
-        while (true) {
+        while (this.carts.length > 1) {
             //this.print();
             // sorted at each loop entry
             this.carts.forEach((cart) => cart.move(this.map));
@@ -117,11 +120,18 @@ class World {
             let prev;
             for (const cart of this.carts) {
                 if (prev && cart.collidesWith(prev)) {
+                    prev.crashed = true;
+                    cart.crashed = true;
                     yield [prev, cart];
                 }
                 prev = cart;
             }
+            this.removeCrashedCarts();
         }
+    }
+
+    removeCrashedCarts() {
+        this.carts = this.carts.filter((c) => !c.crashed);
     }
 
     print() {
@@ -197,6 +207,12 @@ function part1(lines) {
 }
 
 function part2(lines) {
+    const world = parse(lines.concat());
+    const gen = world.tick();
+    // consume collisions
+    for (const _ of gen) {}
+    const cart = world.carts[0];
+    return [cart.x, cart.y];
 
 }
 
