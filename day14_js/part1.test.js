@@ -15,6 +15,6 @@ describe("part1", () => {
     });
 
     it("works for the input", () => {
-        expect(Day14.part1(513401)).toBe("");
+        expect(Day14.part1(513401)).toBe("5371393113");
     });
 });
