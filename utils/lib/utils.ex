@@ -83,8 +83,14 @@ defmodule Utils do
 
     @spec shortest_path(t, vertex, vertex) :: [vertex]
     def shortest_path(graph, src, dst) do
-      {_, path} = shortest(graph, src, dst)
-      path
+      {_, paths} = shortest(graph, src, dst)
+      if length(paths) > 0, do: (hd paths), else: nil
+    end
+
+    @spec shortest_paths(t, vertex, vertex) :: [[vertex]]
+    def shortest_paths(graph, src, dst) do
+      {_, paths} = shortest(graph, src, dst)
+      paths
     end
 
     @spec shortest(t, vertex, vertex) :: {integer, [vertex]}
@@ -116,10 +122,10 @@ defmodule Utils do
       prev = %{}
       #prev = Enum.reduce(unvisited, %{}, fn v, acc -> Map.put(acc, v, nil) end)
 
-      find_path(unvisited, best_distance, neighbors, vertex_distance, prev, src, dst)
+      find_paths(unvisited, best_distance, neighbors, vertex_distance, prev, src, dst)
     end
 
-    defp find_path(unvisited, best_distance, neighbors, vertex_distance, current_prev, src, dst) do
+    defp find_paths(unvisited, best_distance, neighbors, vertex_distance, current_prev, src, dst) do
       # Find the vertext with the smallest distance
       u = hd Enum.sort(unvisited, fn a, b -> best_distance[a] < best_distance[b] end)
       if u == dst do
@@ -130,19 +136,30 @@ defmodule Utils do
         unvisited_neighbors_of_u = Utils.intersect_lists(neighbors[u], unvisited)
         {new_best_distance, new_prev} = Enum.reduce(unvisited_neighbors_of_u, {best_distance, current_prev}, fn v, {best, prev} ->
           alt = best[u] + vertex_distance[{u, v}]
-          if alt < best[v], do: {Map.put(best, v, alt), Map.put(prev, v, u)}, else: {best, prev}
+          if alt <= best[v] do
+            prev_for_v = prev[v] || []
+            {Map.put(best, v, alt), Map.put(prev, v, [u | prev_for_v])}
+          else
+            {best, prev}
+          end
         end)
-        find_path(MapSet.delete(unvisited, u), new_best_distance, neighbors, vertex_distance, new_prev, src, dst)
+        find_paths(MapSet.delete(unvisited, u), new_best_distance, neighbors, vertex_distance, new_prev, src, dst)
       end
     end
 
-    @spec backtrack(vertex, vertex, Map.t) :: [vertex]
+    @spec backtrack(vertex, vertex, Map.t) :: [[vertex]]
     defp backtrack(src, cur, prev) do
       cond do
         cur == nil       -> []
-        src == cur       -> [cur]
+        src == cur       -> [[cur]]
         prev[cur] == nil -> []
-        true             -> backtrack(src, prev[cur], prev) ++ [cur]
+        true             ->
+          all_leading_to_cur = prev[cur] || []
+          Enum.flat_map(all_leading_to_cur, fn x ->
+            backtrack(src, x, prev) |> Enum.map(fn path -> path ++ [cur] end)
+          end)
+          #backtrack(src, prev[cur], prev)
+          #backtrack(src, prev[cur], prev) ++ [cur]
       end
     end
 
