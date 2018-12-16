@@ -49,6 +49,16 @@ function behaves_like(example) {
     }, 0);
 }
 
+function functions_that_fit(example) {
+    return Object.keys(Operations).filter((name) => {
+        const fn = Operations[name];
+        const regs_before = example.before.concat();
+        const args = example.instruction.slice(1);
+        const outcome = fn.apply(null, [regs_before].concat(args));
+        return eq_arrays(outcome, example.after);
+    });
+}
+
 function* parse(lines) {
     let before, instruction, after;
     for (const line of lines) {
@@ -66,6 +76,44 @@ function* parse(lines) {
     }
 }
 
+const set_intersection = (a, b) => new Set([...a].filter(x => b.has(x)));
+const all_ready = (possibilities_by_opcode) => Object.keys(possibilities_by_opcode).every((k) => possibilities_by_opcode[k].size === 1);
+const ready_opcodes = (possibilities_by_opcode) =>
+    Object.keys(possibilities_by_opcode)
+        .filter((k) => possibilities_by_opcode[k].size === 1)
+        .map((k) => [k, [...possibilities_by_opcode[k]][0]]);
+
+function identify_opcodes(lines) {
+    const examples = Array.from(parse(lines));
+    const examples_by_opcode = examples.reduce((acc, ex) => {
+        const opcode = ex.instruction[0];
+        const list = acc[opcode] || (acc[opcode] = []);
+        list.push(ex);
+        return acc;
+    }, {});
+    const possibilities_by_opcode = Object.keys(examples_by_opcode).reduce((acc, k) => {
+        const examples_for_opcode = examples_by_opcode[k];
+        const sets = examples_for_opcode.map((ex) => new Set(functions_that_fit(ex)));
+        const first = sets.shift();
+        const possibilities = sets.reduce(set_intersection, first);
+        //if (possibilities.size !== 1) throw new Error("failed to find a single possibility");
+        acc[k] = possibilities;
+        return acc;
+    }, {});
+    while (!all_ready(possibilities_by_opcode)) {
+        for (const [opcode, name] of ready_opcodes(possibilities_by_opcode)) {
+            for (const oc of Object.keys(possibilities_by_opcode)) {
+                if (oc === opcode) continue;
+                possibilities_by_opcode[oc].delete(name);
+            }
+        }
+    }
+    return Object.keys(possibilities_by_opcode).reduce((acc, k) => {
+        acc[k] = [...possibilities_by_opcode[k]][0];
+        return acc;
+    }, {});
+}
+
 function part1(lines) {
     const examples = Array.from(parse(lines));
     return examples.reduce((sum, ex) => {
@@ -73,8 +121,17 @@ function part1(lines) {
     }, 0);
 }
 
-function part2() {
-
+function part2(lines, program) {
+    const opcode_map = identify_opcodes(lines);
+    let registers = [0, 0, 0, 0];
+    for (const instruction of program) {
+        const numeric = instruction.split(" ").map((s) => +s);
+        const opcode = numeric.shift();
+        const op = opcode_map[opcode];
+        const fn = Operations[op];
+        registers = fn.apply(null, [registers].concat(numeric));
+    }
+    return registers[0];
 }
 
-module.exports = { part1, part2, behaves_like, parse };
+module.exports = { part1, part2, behaves_like, parse, functions_that_fit };
