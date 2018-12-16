@@ -112,21 +112,22 @@ defmodule Utils do
       end)
       unvisited = Map.keys(neighbors) |> MapSet.new
 
-      unless MapSet.member?(unvisited, src) do raise "#{src} not a known vertex" end
-      unless MapSet.member?(unvisited, dst) do raise "#{dst} not a known vertex" end
+      if MapSet.member?(unvisited, src) and MapSet.member?(unvisited, dst) do
+        best_distance = Enum.reduce(unvisited, %{}, fn v, acc ->
+          d = if v == src, do: 0, else: :infinity
+          Map.put(acc, v, d)
+        end)
+        prev = %{}
+        #prev = Enum.reduce(unvisited, %{}, fn v, acc -> Map.put(acc, v, nil) end)
 
-      best_distance = Enum.reduce(unvisited, %{}, fn v, acc ->
-        d = if v == src, do: 0, else: :infinity
-        Map.put(acc, v, d)
-      end)
-      prev = %{}
-      #prev = Enum.reduce(unvisited, %{}, fn v, acc -> Map.put(acc, v, nil) end)
-
-      find_paths(unvisited, best_distance, neighbors, vertex_distance, prev, src, dst)
+        find_paths(unvisited, best_distance, neighbors, vertex_distance, prev, src, dst)
+      else
+        {:infinity, []}
+      end
     end
 
     defp find_paths(unvisited, best_distance, neighbors, vertex_distance, current_prev, src, dst) do
-      # Find the vertext with the smallest distance
+      # Find the vertex with the smallest distance
       u = hd Enum.sort(unvisited, fn a, b -> best_distance[a] < best_distance[b] end)
       if u == dst do
         # done
@@ -135,7 +136,7 @@ defmodule Utils do
       else
         unvisited_neighbors_of_u = Utils.intersect_lists(neighbors[u], unvisited)
         {new_best_distance, new_prev} = Enum.reduce(unvisited_neighbors_of_u, {best_distance, current_prev}, fn v, {best, prev} ->
-          alt = best[u] + vertex_distance[{u, v}]
+          alt = add(best[u], vertex_distance[{u, v}])
           if alt <= best[v] do
             prev_for_v = prev[v] || []
             {Map.put(best, v, alt), Map.put(prev, v, [u | prev_for_v])}
@@ -144,6 +145,14 @@ defmodule Utils do
           end
         end)
         find_paths(MapSet.delete(unvisited, u), new_best_distance, neighbors, vertex_distance, new_prev, src, dst)
+      end
+    end
+
+    defp add(a, b) do
+      if a == :infinity or b == :infinity do
+        :infinity
+      else
+        a + b
       end
     end
 

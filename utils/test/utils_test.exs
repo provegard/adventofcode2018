@@ -46,6 +46,47 @@ defmodule UtilsTest do
     assert Utils.Graph.shortest_path(graph, :qux, :foo) == [:qux, :bar, :foo]
   end
 
+  test "shortest_path unknown src" do
+    e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
+
+    graph = %Utils.Graph{edges: [e1]}
+    assert Utils.Graph.shortest_path(graph, :xx, :bar) == nil
+  end
+
+  test "shortest_path unknown dst" do
+    e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
+
+    graph = %Utils.Graph{edges: [e1]}
+    assert Utils.Graph.shortest_path(graph, :foo, :xx) == nil
+  end
+
+  test "shortest_path middle" do
+    e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
+    e2 = %Utils.Graph.Edge{from: :bar, to: :qux, distance: 5}
+    e3 = %Utils.Graph.Edge{from: :qux, to: :quux, distance: 5}
+
+    graph = %Utils.Graph{edges: [e1, e2, e3]}
+    assert Utils.Graph.shortest_path(graph, :quux, :bar) == [:quux, :qux, :bar]
+  end
+
+  test "shortest_path disconnected" do
+    e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
+    e2 = %Utils.Graph.Edge{from: :baz, to: :qux, distance: 5}
+
+    graph = %Utils.Graph{edges: [e1, e2]}
+    assert Utils.Graph.shortest_path(graph, :foo, :bar) == [:foo, :bar]
+  end
+
+  @tag :focus
+  test "shortest_path disconnected no path" do
+    edges = [
+      %Utils.Graph.Edge{distance: 1, from: :a, to: :b},
+      %Utils.Graph.Edge{distance: 1, from: :c, to: :d},
+    ]
+    graph = %Utils.Graph{edges: edges}
+    assert Utils.Graph.shortest_path(graph, :a, :c) == nil
+  end
+
   test "shortest_paths given multiple paths" do
     e1 = %Utils.Graph.Edge{from: :foo, to: :bar, distance: 5}
     e2 = %Utils.Graph.Edge{from: :bar, to: :qux, distance: 5}
