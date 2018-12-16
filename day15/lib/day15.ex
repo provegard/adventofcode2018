@@ -158,26 +158,19 @@ defmodule Day15 do
     binary_search(lines, elf_power, upper_bound)
   end
 
+  defp binary_search(_, low, high) when high < low, do: low
   defp binary_search(lines, low, high) do
-    if high < low do
-      low
-    else
-      mid = div(low + high, 2)
-      {win, _} = try_power(lines, mid)
-      if win do
-        binary_search(lines, low, mid - 1)
-      else
-        binary_search(lines, mid + 1, high)
-      end
+    mid = div(low + high, 2)
+    case try_power(lines, mid) do
+      {true, _} -> binary_search(lines, low, mid - 1)
+      _         -> binary_search(lines, mid + 1, high)
     end
   end
 
   defp find_upper_bound(lines, elf_power) do
-    {win, _} = try_power(lines, elf_power)
-    if win do
-      elf_power
-    else
-      find_upper_bound(lines, elf_power * 2)
+    case try_power(lines, elf_power) do
+      {true, _} -> elf_power
+      _         -> find_upper_bound(lines, elf_power * 2)
     end
   end
 
@@ -188,8 +181,7 @@ defmodule Day15 do
       outcome = full_rounds * Cave.sum_hit_points(new_cave)
       {true, outcome}
     rescue
-      _ in ElfDied ->
-        {false, -1}
+      _ in ElfDied -> {false, -1}
     end
   end
 
@@ -205,11 +197,9 @@ defmodule Day15 do
           # unit was just killed
           {:cont, {cave, false}}
         else
-          turn_result = unit_turn(unit_pos, type, cave, throw_on_dead_elf)
-          if turn_result == nil do
-            {:halt, {cave, true}}
-          else
-            {:cont, {turn_result, false}}
+          case unit_turn(unit_pos, type, cave, throw_on_dead_elf) do
+            nil   -> {:halt, {cave, true}}
+            other -> {:cont, {other, false}}
           end
         end
       end)
