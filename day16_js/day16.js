@@ -96,7 +96,6 @@ function identify_opcodes(lines) {
         const sets = examples_for_opcode.map((ex) => new Set(functions_that_fit(ex)));
         const first = sets.shift();
         const possibilities = sets.reduce(set_intersection, first);
-        //if (possibilities.size !== 1) throw new Error("failed to find a single possibility");
         acc[k] = possibilities;
         return acc;
     }, {});
@@ -123,15 +122,14 @@ function part1(lines) {
 
 function part2(lines, program) {
     const opcode_map = identify_opcodes(lines);
-    let registers = [0, 0, 0, 0];
-    for (const instruction of program) {
+    const executables = program.map((instruction) => {
         const numeric = instruction.split(" ").map((s) => +s);
         const opcode = numeric.shift();
-        const op = opcode_map[opcode];
-        const fn = Operations[op];
-        registers = fn.apply(null, [registers].concat(numeric));
-    }
-    return registers[0];
+        const fn = Operations[opcode_map[opcode]];
+        return (regs) => fn.apply(null, [regs].concat(numeric));
+    });
+    const final_regs = executables.reduce((regs, exe) => exe(regs), [0, 0, 0, 0]);
+    return final_regs[0];
 }
 
 module.exports = { part1, part2, behaves_like, parse, functions_that_fit };
