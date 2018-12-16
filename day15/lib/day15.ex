@@ -1,40 +1,39 @@
 defmodule Unit do
   defstruct type: nil, hit_points: 200, attack_power: 3
 
-  def new(type) do
-    %Unit{type: type}
-  end
-
-  def take_hit_from(unit, attacker) do
-    %Unit{unit | hit_points: unit.hit_points - attacker.attack_power}
-  end
-
+  def new(type, attack_power), do: %Unit{type: type, attack_power: attack_power}
+  def take_hit_from(unit, attacker), do: %Unit{unit | hit_points: unit.hit_points - attacker.attack_power}
   def is_dead?(unit), do: unit.hit_points <= 0
-
   def is?(%Unit{type: type}, requested), do: type == requested
   def is?(_, _), do: false
 end
 
 defmodule Cave do
   import Astar
-  defstruct map: nil
+  defstruct map: nil, stuck_positions: nil
 
-  def parse(lines) do
+  def parse(lines, elf_attack_power \\ 3) do
     map = lines |> Enum.with_index() |> Enum.reduce(%{}, fn {line, y}, map ->
       String.to_charlist(line) |> Enum.with_index() |> Enum.reduce(map, fn {chr, x}, map ->
         pos = {x, y}
         at_pos = cond do
-          chr == (hd '#') -> :wall
+          chr == (hd '#') -> nil # :wall
           chr == (hd '.') -> :open
-          chr == (hd 'E') -> Unit.new(:elf)
-          chr == (hd 'G') -> Unit.new(:goblin)
+          chr == (hd 'E') -> Unit.new(:elf, elf_attack_power)
+          chr == (hd 'G') -> Unit.new(:goblin, 3)
           true            -> raise "Unknown: #{chr}"
         end
-        Map.put(map, pos, at_pos)
+        if at_pos == nil, do: map, else: Map.put(map, pos, at_pos)
       end)
     end)
-    %Cave{map: map}
+    %Cave{map: map, stuck_positions: MapSet.new()}
   end
+
+  def remember_stuck_at(%Cave{stuck_positions: s} = cave, pos) do
+    %Cave{cave | stuck_positions: MapSet.put(s, pos)}
+  end
+
+  def is_position_stuck?(%Cave{stuck_positions: s}, pos), do: MapSet.member?(s, pos)
 
   def sum_hit_points(cave) do
     units(cave) |> Enum.reduce(0, fn {_, unit}, sum -> sum + unit.hit_points end)
@@ -61,12 +60,7 @@ defmodule Cave do
           [pos]
         else
           path = astar(env, pos, dst)
-          if length(path) == 0 do
-            # no path
-            []
-          else
-            [pos | path]
-          end
+          if length(path) == 0, do: [], else: [pos | path]
         end
       end)
       |> Enum.reject(fn path -> length(path) == 0 end)
@@ -89,31 +83,33 @@ defmodule Cave do
     at_from = cave_map[from]
     at_to = cave_map[to]
     cond do
-      at_from == :wall -> raise "cannot move a wall at #{inspect from}"
+      #at_from == :wall -> raise "cannot move a wall at #{inspect from}"
+      at_from == nil -> raise "cannot move a wall at #{inspect from}"
       at_from == :open -> raise "nothing to move at #{inspect from}"
       at_to != :open -> raise "#{inspect at_from} at #{inspect from} cannot move to #{inspect at_to} at #{inspect to}"
       true ->
         new_cave_map = Map.put(Map.put(cave_map, to, at_from), from, :open)
-        %Cave{cave | map: new_cave_map}
+        # Moving means that any given position that was previously stuck may not be that anymore
+        %Cave{cave | map: new_cave_map, stuck_positions: MapSet.new()}
     end
   end
 
   def remove_at(cave, pos) do
-    update_at(cave, pos, :open)
+    new_cave = update_at(cave, pos, :open)
+    # Removing means that any given position that was previously stuck may not be that anymore
+    %Cave{new_cave | stuck_positions: MapSet.new()}
   end
-
-  def update_at(%Cave{map: map} = cave, pos, at_pos) do
-    %Cave{cave | map: Map.put(map, pos, at_pos)}
-  end
+  def update_at(%Cave{map: map} = cave, pos, at_pos), do: %Cave{cave | map: Map.put(map, pos, at_pos)}
 
   def print(%Cave{map: map}) do
-    max_x = map |> Enum.map(fn {{x, _}, _} -> x end) |> Enum.max()
-    max_y = map |> Enum.map(fn {{_, y}, _} -> y end) |> Enum.max()
+    max_x = 1 + (map |> Enum.map(fn {{x, _}, _} -> x end) |> Enum.max())
+    max_y = 1 + (map |> Enum.map(fn {{_, y}, _} -> y end) |> Enum.max())
     lines = 0..max_y |> Enum.map(fn y ->
       cells = 0..max_x |> Enum.map(fn x ->
         at_pos = map[{x, y}]
         cond do
-          at_pos == :wall -> "#"
+          #at_pos == :wall -> "#"
+          at_pos == nil -> "#"
           at_pos == :open -> "."
           Unit.is?(at_pos, :elf) -> "E"
           Unit.is?(at_pos, :goblin) -> "G"
@@ -123,7 +119,7 @@ defmodule Cave do
       stats = 0..max_x |> Enum.map(fn x ->
         at_pos = map[{x, y}]
         cond do
-          at_pos == :wall -> ""
+          at_pos == nil -> "" #:wall -> ""
           at_pos == :open -> ""
           Unit.is?(at_pos, :elf) -> "E(#{at_pos.hit_points})"
           Unit.is?(at_pos, :goblin) -> "G(#{at_pos.hit_points})"
@@ -137,19 +133,67 @@ defmodule Cave do
   end
 end
 
+defmodule ElfDied do
+  defexception message: "elf died"
+end
+
 defmodule Day15 do
   def is_less_in_reading_order?({x1, y1}, {x2, y2}), do: y1 < y2 or (y1 == y2 and x1 < x2)
 
   def part1(lines) do
-    cave = Cave.parse(lines)
-    {new_cave, full_rounds} = turn(cave, 0)
+    cave = Cave.parse(lines, 3)
+    {new_cave, full_rounds} = turn(cave, 0, false)
     full_rounds * Cave.sum_hit_points(new_cave)
   end
 
-  defp turn(cave, rounds_so_far) do
-    IO.puts("** BEGIN ROUND #{inspect (rounds_so_far+1)}")
-    IO.puts(Cave.print(cave))
-    #:timer.sleep(100)
+  def part2(lines) do
+    power = find_first_win(lines, 4)
+    {win, outcome} = try_power(lines, power)
+    if not win, do: raise "Not win???"
+    {power, outcome}
+  end
+
+  defp find_first_win(lines, elf_power) do
+    upper_bound = find_upper_bound(lines, elf_power)
+    binary_search(lines, elf_power, upper_bound)
+  end
+
+  defp binary_search(lines, low, high) do
+    if high < low do
+      low
+    else
+      mid = div(low + high, 2)
+      {win, _} = try_power(lines, mid)
+      if win do
+        binary_search(lines, low, mid - 1)
+      else
+        binary_search(lines, mid + 1, high)
+      end
+    end
+  end
+
+  defp find_upper_bound(lines, elf_power) do
+    {win, _} = try_power(lines, elf_power)
+    if win do
+      elf_power
+    else
+      find_upper_bound(lines, elf_power * 2)
+    end
+  end
+
+  defp try_power(lines, elf_power) do
+    cave = Cave.parse(lines, elf_power)
+    try do
+      {new_cave, full_rounds} = turn(cave, 0, true)
+      outcome = full_rounds * Cave.sum_hit_points(new_cave)
+      {true, outcome}
+    rescue
+      _ in ElfDied ->
+        {false, -1}
+    end
+  end
+
+  defp turn(cave, rounds_so_far, throw_on_dead_elf) do
     units = Cave.units(cave)
     unit_types = units |> Enum.map(fn {_, unit} -> unit.type end) |> Enum.uniq()
     if length(unit_types) == 1 do
@@ -161,7 +205,7 @@ defmodule Day15 do
           # unit was just killed
           {:cont, {cave, false}}
         else
-          turn_result = unit_turn(unit_pos, type, cave)
+          turn_result = unit_turn(unit_pos, type, cave, throw_on_dead_elf)
           if turn_result == nil do
             {:halt, {cave, true}}
           else
@@ -173,12 +217,12 @@ defmodule Day15 do
         # combat ends
         {new_cave, rounds_so_far}
       else
-        turn(new_cave, rounds_so_far + 1)
+        turn(new_cave, rounds_so_far + 1, throw_on_dead_elf)
       end
     end
   end
 
-  def unit_turn(unit_pos, unit, cave) do
+  def unit_turn(unit_pos, unit, cave, throw_on_dead_elf) do
     # Need to get units for each unit turn, since units may have moved or been killed recently.
     units = Cave.units(cave)
 
@@ -190,45 +234,50 @@ defmodule Day15 do
     else
       targets_in_range = find_targets_in_range(target_positions, unit_pos)
       if length(targets_in_range) > 0 do
-        attack(cave, unit_pos, targets_in_range)
+        attack(cave, unit_pos, targets_in_range, throw_on_dead_elf)
       else
         # Unit moves
-        in_range = target_positions
-          |> Enum.flat_map(fn p -> Cave.open_positions_adjacent_to_position(cave, p) end)
-          |> Enum.uniq()
-
-        reachable_paths = in_range
-          |> Enum.map(fn p -> Cave.shortest_path(cave, unit_pos, p) end)
-          |> Enum.reject(fn path -> length(path) == 0 end)
-
-        if length(reachable_paths) == 0 do
-          # nothing to do
+        if Cave.is_position_stuck?(cave, unit_pos) do
           cave
         else
-          # the nearest is the one with shortest path (all paths found are of equal length)
-          # many may be nearest but we get the first (which should be in reading order)
-          path = Enum.min_by(reachable_paths, fn path -> length(path) end)
-          chosen_step = hd path
-          cave_after_move = Cave.move(cave, unit_pos, chosen_step)
+          destinations = target_positions
+            |> Enum.flat_map(fn p -> Cave.open_positions_adjacent_to_position(cave, p) end)
+            |> Enum.uniq()
 
-          # can we attack?
-          targets_in_range_after_move = find_targets_in_range(target_positions, chosen_step)
-          if length(targets_in_range_after_move) > 0 do
-            attack(cave_after_move, chosen_step, targets_in_range_after_move)
+          reachable_paths = destinations
+            |> Enum.map(fn p -> Cave.shortest_path(cave, unit_pos, p) end)
+            |> Enum.reject(fn path -> length(path) == 0 end)
+
+          if length(reachable_paths) == 0 do
+            # nothing to do
+            Cave.remember_stuck_at(cave, unit_pos)
           else
-            cave_after_move
+            # the nearest is the one with shortest path (all paths found are of equal length)
+            # many may be nearest but we get the first (which should be in reading order)
+            path = Enum.min_by(reachable_paths, fn path -> length(path) end)
+            chosen_step = hd path
+            cave_after_move = Cave.move(cave, unit_pos, chosen_step)
+
+            # can we attack?
+            targets_in_range_after_move = find_targets_in_range(target_positions, chosen_step)
+            if length(targets_in_range_after_move) > 0 do
+              attack(cave_after_move, chosen_step, targets_in_range_after_move, throw_on_dead_elf)
+            else
+              cave_after_move
+            end
           end
         end
       end
     end
   end
 
-  def attack(cave, attacker_pos, target_positions) do
+  def attack(cave, attacker_pos, target_positions, throw_on_dead_elf) do
     attacker = cave.map[attacker_pos]
     victims = target_positions |> Enum.map(fn pos -> {cave.map[pos], pos} end)
     {chosen_victim, victim_pos} = victims |> Enum.min_by(fn {v, _} -> v.hit_points end)
     victim_after_attack = Unit.take_hit_from(chosen_victim, attacker)
     if Unit.is_dead?(victim_after_attack) do
+      if throw_on_dead_elf and victim_after_attack.type == :elf, do: raise ElfDied
       Cave.remove_at(cave, victim_pos)
     else
       Cave.update_at(cave, victim_pos, victim_after_attack)

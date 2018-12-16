@@ -24,8 +24,7 @@ defmodule Day15Test do
       "#######"
     ]
     cave = Cave.parse(lines)
-    units = Cave.units(cave)
-    new_cave = Day15.unit_turn(units, {1, 1}, cave.map[{1, 1}], cave)
+    new_cave = Day15.unit_turn({1, 1}, cave.map[{1, 1}], cave, false)
 
     assert new_cave.map[{1, 1}] == :open
     assert new_cave.map[{2, 1}] == %Unit{type: :elf}
@@ -40,8 +39,7 @@ defmodule Day15Test do
       "#######"
     ]
     cave = Cave.parse(lines)
-    units = Cave.units(cave)
-    new_cave = Day15.unit_turn(units, {2, 1}, cave.map[{2, 1}], cave)
+    new_cave = Day15.unit_turn({2, 1}, cave.map[{2, 1}], cave, false)
 
     assert new_cave.map[{2, 1}] == :open
     assert new_cave.map[{3, 1}] == %Unit{type: :elf}
@@ -60,8 +58,40 @@ defmodule Day15Test do
     assert Day15.part1(lines) == 27730
   end
 
+  test "part 2 example 1" do
+    lines = [
+      "#######",
+      "#.G...#",
+      "#...EG#",
+      "#.#.#G#",
+      "#..G#E#",
+      "#.....#",
+      "#######"
+    ]
+    assert Day15.part2(lines) == {15, 4988}
+  end
+
+  test "part 2 example 2" do
+    lines = [
+      "#######",
+      "#E..EG#",
+      "#.#G.E#",
+      "#E.##E#",
+      "#G..#.#",
+      "#..E#.#",
+      "#######"
+    ]
+    assert Day15.part2(lines) == {4, 31284}
+  end
+
   test "part 1" do
     lines = Utils.readlines("input")
     assert Day15.part1(lines) == 207542
+  end
+
+  @tag timeout: 600000
+  test "part 2" do
+    lines = Utils.readlines("input")
+    assert Day15.part2(lines) == {16, 64688}
   end
 end
