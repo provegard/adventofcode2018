@@ -53,6 +53,10 @@ class State {
     lumberCount() {
         return _.flatMap(this.rows, (r) => r.filter((a) => a === "#")).length;
     }
+
+    toString() {
+        return this.rows.map((r) => r.join("")).join("\n");
+    }
 }
 
 function toRows(lines) {
@@ -65,7 +69,30 @@ function part1(lines) {
     return s.treeCount() * s.lumberCount();
 }
 
+function *generate(state) {
+    let minute = 0;
+    while (true) {
+        yield [minute++, state.toString()];
+        state.transform();
+    }
+}
+
 function part2(lines) {
+    const s = new State(toRows(lines));
+    const seen = {};
+    for (const [minute, stateString] of generate(s)) {
+        const lastMinuteSeen = seen[stateString]; 
+        if (lastMinuteSeen !== undefined) {
+            // after _minute_ minutes, we see a state that is the same as after _lastMinuteSeen_ minutes
+            // lastMinuteSeen = 400
+            // minute = 428
+            const periodicity = minute - lastMinuteSeen;
+            const rem = (1000000000 - lastMinuteSeen) % periodicity;
+            for (let i = 0; i < rem; i++) s.transform();
+            return s.treeCount() * s.lumberCount();
+        }
+        seen[stateString] = minute;
+    }
 }
 
 module.exports = { part1, part2 };
