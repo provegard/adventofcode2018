@@ -51,11 +51,12 @@ function buildProgram(lines)  {
     return { ipReg, instructions };
 }
 
-function part1(lines) {
+function run(lines, reg0) {
     const { ipReg, instructions } = buildProgram(lines);
     let curIp = 0;
-    let regs = [0, 0, 0, 0, 0, 0]
+    let regs = [reg0, 0, 0, 0, 0, 0]
     while (curIp >= 0 && curIp < instructions.length) {
+        console.log(regs);
         regs[ipReg] = curIp;
         regs = instructions[curIp](regs);
         curIp = 1 + regs[ipReg];
@@ -63,7 +64,12 @@ function part1(lines) {
     return regs[0];
 }
 
+function part1(lines) {
+    return run(lines, 0);
+}
+
 function part2(lines) {
+    return run(lines, 1);
 }
 
 module.exports = { part1, part2 };
