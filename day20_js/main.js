@@ -73,7 +73,9 @@ function part1(regex) {
     return _.max(_.values(f));
 }
 
-function part2(lines) {
+function part2(regex) {
+    const f = buildFacility(regex);
+    return _.values(f).filter((x) => x >= 1000).length;
 }
 
 module.exports = { part1, part2, subPaths };
