@@ -5,30 +5,25 @@ let r3 = 0;
 let r4 = 0;
 let r5 = 0;
 
-// 14559001 too low
-
 function loop_c() {
     let iter = 0;
     r4 = 0;
-    loop_c2: do {
+    do {
         r3 = r4 | 65536;
         r4 = 16098955;
-        loop_b2: do {
+        do {
             r5 = r3 & 255;
             r4 += r5;
             r4 = r4 & 16777215;
             r4 = (r4 * 65899) & 16777215;
-            if (256 > r3) {
-                break; // to loop_c2
+            if (r3 < 256) {
+                break;
             } else {
-                //console.log("r3 = " + r3);
-                r5 = Math.floor(r3 / 256);
-                r3 = r5;
+                r3 = Math.floor(r3 / 256);
             }
-            iter++;
         } while (true);
-        console.log([r0, "x", r2, r3, r4, r5]);
-        console.log("TEST");
+
+        iter++;
     } while (r4 !== r0);
     console.log("done, iter = " + iter);
 }
@@ -39,5 +34,13 @@ function run(value_of_r0) {
     r2 = r3 = r4 = r5 = 0;
     loop_c();
 }
-// 15823996 correct on part 1
-run(15823996);
+
+// 15823996 is correct on part 1
+// This is the value of r4 after the first iteration.
+
+// 10199686 correct on part 2
+// There is a loop when r4==13196126, i.e. this value is always followed by the same sequence.
+// Thus, it's tempting to think that the r4 immediately prior to the first 13196126 is the
+// answer. However, the sequence before first 13196126 isn't the same as the "loop sequence".
+// Therefore, the answer is the r4 immediately prior to the _second_ 13196126, or put differently
+// the last value of the looping sequence.
