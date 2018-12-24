@@ -80,13 +80,17 @@ class System {
                 (b.initiative - a.initiative);
         });
         const targetByAttacker = new Map();
+        const possibleTargets = allGroups.concat();
         for (const attacker of allGroups) {
-            const selectedAlready = new Set(targetByAttacker.values());
-            const enemies = allGroups
-                .filter((g) => !selectedAlready.has(g))
-                .filter((g) => attacker.isEnemy(g));
+            //const selectedAlready = new Set(targetByAttacker.values());
+            const enemies = possibleTargets.filter((g) => attacker.isEnemy(g));
+            //    .filter((g) => attacker.isEnemy(g) && !selectedAlready.has(g));
             const target = attacker.selectTarget(enemies);
-            targetByAttacker.set(attacker, target);
+            if (target) {
+                targetByAttacker.set(attacker, target);
+                const idx = possibleTargets.indexOf(target);
+                possibleTargets.splice(idx, 1);
+            }
         }
         // 2. attack phase
         allGroups.sort((a, b) => b.initiative - a.initiative);
@@ -120,9 +124,19 @@ class System {
             : this.infection;
         return winner.reduce((s, g) => s + g.unitCount, 0);
     }
+
+    immuneSystemWon() {
+        return this.immuneSystem.length > 0;
+    }
+
+    isImmuneSystemStronger() {
+        const isPower = this.immuneSystem.reduce((s, u) => s + u.effectivePower(), 0);
+        const infPower = this.infection.reduce((s, u) => s + u.effectivePower(), 0);
+        return isPower > infPower;
+    }
 }
 
-Group.parse = (name, type, line) => {
+Group.parse = (name, type, line, attackDamageBoost = 0) => {
     // 989 units each with 1274 hit points (immune to fire; weak to bludgeoning,
     // slashing) with an attack that does 25 slashing damage at initiative 3
     
@@ -133,7 +147,7 @@ Group.parse = (name, type, line) => {
     const unitCount = +parts[0];
     const hitPoints = +parts[4];
     const doesIdx = parts.indexOf("does");
-    const attackDamage = +parts[doesIdx + 1];
+    const attackDamage = +parts[doesIdx + 1] + attackDamageBoost;
     const attackType = parts[doesIdx + 2];
     const initiative = +parts[parts.length - 1];
 
@@ -159,7 +173,7 @@ Group.parse = (name, type, line) => {
     return new Group(name, type, unitCount, hitPoints, attackDamage, attackType, initiative, immunities, weaknesses);
 };
 
-System.parse = (lines) => {
+System.parse = (lines, boost) => {
     lines = lines.slice(1);
     const immuneSystem = [];
     const infection = [];
@@ -171,12 +185,13 @@ System.parse = (lines) => {
             current = infection;
             type = "infection";
             idx = 0;
+            boost = 0; // infection doesn't get a boost
             continue;
         }
         if (line.indexOf(":") >= 0) continue;
         idx++;
         let name = type + " group " + idx;
-        current.push(Group.parse(name, type, line));
+        current.push(Group.parse(name, type, line, boost));
     }
     return new System(immuneSystem, infection);
 }
@@ -187,4 +202,44 @@ function part1(lines) {
     return system.sizeOfWinner();
 }
 
-module.exports = { part1, Group, System };
+function bounds(lines) {
+    let boost = 1;
+    let prev = 0;
+    while (true) {
+        const system = System.parse(lines, boost);
+        system.doCombat();
+        if (system.immuneSystemWon()) return {lower: prev, upper: boost};
+        prev = boost;
+        boost *= 2;
+    }
+}
+
+function binarySearch(lines, low, high) {
+    if (high < low) return low;
+    const mid = Math.floor((low + high) / 2);
+    const system = System.parse(lines, mid);
+    system.doCombat();
+    if (system.immuneSystemWon()) {
+        return binarySearch(lines, low, mid - 1);
+    }
+    return binarySearch(lines, mid + 1, high);
+}
+
+function part2(lines) {
+    const {lower, upper} = bounds(lines);
+    const boost = binarySearch(lines, lower, upper);
+    const system = System.parse(lines, boost);
+    system.doCombat();
+    return system.sizeOfWinner();
+    /*let boost = 1;
+    while (true) {
+        const system = System.parse(lines, boost);
+        if (system.isImmuneSystemStronger()) {
+            system.doCombat();
+            return system.sizeOfWinner();
+        }
+        boost++;
+    }*/
+}
+
+module.exports = { part1, part2, Group, System };
