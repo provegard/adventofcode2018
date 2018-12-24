@@ -9,6 +9,6 @@ describe("part2", () => {
 
     it("works for the input", () => {
         const lines = utils.readLines("input");
-        //expect(main.part2(lines)).toBe(0);
+        expect(main.part2(lines)).toBe(8698);
     });
 });

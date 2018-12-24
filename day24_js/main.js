@@ -50,8 +50,6 @@ class Group {
         const hp = other.totalHitPoints();
         let unitsKilled = Math.floor(other.unitCount * damage / hp);
         unitsKilled = Math.min(unitsKilled, other.unitCount); // mostly to get debug output that makes sense
-        //console.log(this.name + " attacked " + other.name +
-        //    " (which has total hit points " + hp + " and " + other.unitCount + " units) with damage " + damage + ", killing " + unitsKilled + " units");
         other.unitCount -= unitsKilled;
     }
 
@@ -109,13 +107,18 @@ class System {
     }
 
     doCombat() {
-        let iter = 0;
         while (!this.isCombatDone()) {
-            //console.log(this.immuneSystem);
-            //console.log(this.infection);
-            //if (++iter == 2) throw new Error("???");
+            const before = this.totalUnits();
             this.fight();
+            const after = this.totalUnits();
+            if (after === before) break; // throw new Error("deadlock");
         }
+    }
+
+    totalUnits() {
+        const a = this.immuneSystem.reduce((s, g) => s + g.unitCount, 0);
+        const b = this.infection.reduce((s, g) => s + g.unitCount, 0);
+        return a + b;
     }
 
     sizeOfWinner() {
@@ -126,7 +129,7 @@ class System {
     }
 
     immuneSystemWon() {
-        return this.immuneSystem.length > 0;
+        return this.immuneSystem.length > 0 && this.infection.length === 0;
     }
 
     isImmuneSystemStronger() {
@@ -227,6 +230,7 @@ function binarySearch(lines, low, high) {
 
 function part2(lines) {
     const {lower, upper} = bounds(lines);
+    //throw new Error("has bounds: " + JSON.stringify({lower, upper}));
     const boost = binarySearch(lines, lower, upper);
     const system = System.parse(lines, boost);
     system.doCombat();
