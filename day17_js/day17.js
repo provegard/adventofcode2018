@@ -1,11 +1,5 @@
 const utils = require("../utils_js/utils");
 const _ = require("lodash");
-const Iterator = utils.Iterator;
-
-function replaceWithWater(r) {
-    const str = r.join("").replace(/#\|*\|(?=#)/g, s => s.replace(/\|/g, "~"));
-    return str.split("");
-}
 
 class Ground {
     constructor(minX, minY, rows) {
@@ -32,18 +26,11 @@ class Ground {
     updateAt(x, y, value) {
         const rowIdx = y - this.minY;
         const row = this.rows[rowIdx];
-        if (!row) return;
+        if (!row) return value;
         const colIdx = x - this.minX;
-        if (colIdx < 0 || colIdx >= row.length) return;
+        if (colIdx < 0 || colIdx >= row.length) return value;
         row[colIdx] = value;
-    }
-
-    flow() {
-        this.track(500, 1);
-    }
-
-    fill() {
-        this.rows = this.rows.map(replaceWithWater);
+        return value;
     }
 
     reachableTileCount() {
@@ -58,55 +45,47 @@ class Ground {
         );
     }
 
-    hasWallTo(x, y, x_dir) {
-        const limit = x_dir < 0 ? this.minX - 1 : this.maxX + 1;
-        while ((x += x_dir) !== limit) {
-            if (this.at(x, y) === "#") return true;
-            if (this.at(x, y + 1) === ".") return false;
-        }
-        return false;
-    }
-
-    track(x, y, x_dir = 0) {
+    scan(x, y, dir) {
         const type = this.at(x, y);
-        if (type === "|") return false; // done, merged
-        if (type !== ".") return true; // done, hit something
-        if (y > this.maxY) return false; // done, infinite way down
-
-        this.updateAt(x, y, "|");
-        const typeBelow = this.at(x, y + 1);
-        if (typeBelow === "|" && x_dir === 0) {
-            // water below, don't go there
-            // track horizontal, but only if we're confined by two walls
-            if (this.hasWallTo(x, y, -1) && this.hasWallTo(x, y, 1)) {
-                return this.trackHorizontal(x, y);
-            }
-            return false;
-        }
-        if (typeBelow === ".") {
-            // Sand below, so go down
-            if (this.track(x, y + 1)) {
-                // filled below, so check sides / continue in one direction
-                return this.trackHorizontal(x, y, x_dir);
-            }
-            return false;
-        } else {
-            return this.trackHorizontal(x, y, x_dir);
-        }
+        if (type === "#") return x - dir; // return edge of water 
+        const typeBelow = this.findType(x, y + 1);
+        if (typeBelow === "|") return false;
+        return this.scan(x + dir, y, dir); 
     }
 
-    trackHorizontal(x, y, x_dir = 0) {
-        if (x_dir !== 0) {
-            return this.track(x + x_dir, y, x_dir);
-        } else {
-            return this.trackLeftRight(x, y);
-        }
-    }
+    findType(x, y, x_dir = 0) {
+        if (y > this.maxY) return "|"; // infinite way down
+        const type = this.at(x, y);
+        if (type !== ".") return type; // already done
 
-    trackLeftRight(x, y) {
-        const a = this.track(x - 1, y, -1);
-        const b = this.track(x + 1, y, 1);
-        return a && b;
+        const typeBelow = this.findType(x, y + 1);
+        if (x_dir === 0) {
+            // going down
+            if (typeBelow === "|") {
+                return this.updateAt(x, y, "|");
+            }
+            // assume typeBelow is # or ~
+            // scan left and right to see if we can create water at rest
+            const leftEdge = this.scan(x - 1, y, -1);
+            const rightEdge = (leftEdge !== false) && this.scan(x + 1, y, 1);
+            if (leftEdge === false || rightEdge === false) {
+                // no water at rest
+                this.findType(x - 1, y, -1);
+                this.findType(x + 1, y, 1);
+                return this.updateAt(x, y, "|");
+            } else {
+                // create water at rest
+                for (let xx = leftEdge; xx <= rightEdge; xx++) {
+                    this.updateAt(xx, y, "~");
+                }
+                return "~";
+            }
+        } else {
+            if (typeBelow !== "|") {
+                this.findType(x + x_dir, y, x_dir);
+            }
+            return this.updateAt(x, y, "|");
+        }
     }
 }
 
@@ -136,7 +115,6 @@ function parseLines(lines) {
     // +/-1 to allow for downwards flow outside of a reservoir on the edge
     const minX = _.min(allXs) - 1;
     const maxX = _.max(allXs) + 1;
-    console.log([minY, maxY, minX, maxX]);
     const rows = _.range(minY, maxY + 1).map((y) => {
         const entriesForY = entries.filter((e) => e.ys.includes(y));
         const xs = _.flatMap(entriesForY, (e) => e.xs);
@@ -147,11 +125,10 @@ function parseLines(lines) {
 
 function run(lines) {
     const ground = parseLines(lines);
-    console.log(ground.render());
-    ground.flow();
     //console.log(ground.render());
-    ground.fill();
-    console.log(ground.render());
+    ground.findType(500, 1);
+    //console.log("");
+    //console.log(ground.render());
     return ground;
 }
 
@@ -163,4 +140,4 @@ function part2(lines) {
     return run(lines).actualWaterCount();
 }
 
-module.exports = { part1, part2, parseLine, replaceWithWater };
+module.exports = { part1, part2, parseLine };

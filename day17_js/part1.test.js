@@ -38,7 +38,7 @@ describe("part1", () => {
             xs: [495],
             ys: [2, 3]
         });
-    })
+    });
 
     it("parses a line with y first", () => {
         const line = "y=7, x=12..13";
@@ -46,11 +46,5 @@ describe("part1", () => {
             xs: [12, 13],
             ys: [7]
         });
-    })
-
-    it("can replace potential water with water", () => {
-        const line = "#||#||#".split("");
-        const result = Day17.replaceWithWater(line);
-        expect(result.join("")).toBe("#~~#~~#");
     });
 });
