@@ -34,14 +34,16 @@ class Ground {
     }
 
     reachableTileCount() {
-        return _.sumBy(this.rows, (row) =>
-            _.sumBy(row, (e) => (e === "|" || e === "~") ? 1 : 0)
-        );
+        return this.countTypes(["|", "~"]);
     }
 
     actualWaterCount() {
+        return this.countTypes(["~"]);
+    }
+
+    countTypes(types) {
         return _.sumBy(this.rows, (row) =>
-            _.sumBy(row, (e) => e === "~" ? 1 : 0)
+            _.sumBy(row, (e) => types.indexOf(e) >= 0 ? 1 : 0)
         );
     }
 
