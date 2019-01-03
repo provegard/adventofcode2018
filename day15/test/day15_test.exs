@@ -84,9 +84,16 @@ defmodule Day15Test do
     assert Day15.part2(lines) == {4, 31284}
   end
 
+  @tag :focus
   test "part 1" do
     lines = Utils.readlines("input")
     assert Day15.part1(lines) == 207542
+  end
+
+  @tag :focus
+  test "part 1, Anders" do
+    lines = Utils.readlines("anders_input")
+    assert Day15.part1(lines) == 206236
   end
 
   @tag timeout: 600000

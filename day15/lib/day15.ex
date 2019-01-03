@@ -1,7 +1,7 @@
 defmodule Unit do
-  defstruct type: nil, hit_points: 200, attack_power: 3
+  defstruct type: nil, hit_points: 200, attack_power: 3, id: nil
 
-  def new(type, attack_power), do: %Unit{type: type, attack_power: attack_power}
+  def new(type, attack_power, id), do: %Unit{type: type, attack_power: attack_power, id: id}
   def take_hit_from(unit, attacker), do: %Unit{unit | hit_points: unit.hit_points - attacker.attack_power}
   def is_dead?(unit), do: unit.hit_points <= 0
   def is?(%Unit{type: type}, requested), do: type == requested
@@ -12,15 +12,25 @@ defmodule Cave do
   import Astar
   defstruct map: nil, stuck_positions: nil
 
+  def unit_id_at(cave, pos) do
+    at_pos = cave.map[pos]
+    cond do
+      Unit.is?(at_pos, :elf) -> at_pos.id
+      Unit.is?(at_pos, :goblin) -> at_pos.id
+      true -> -1
+    end
+  end
+
   def parse(lines, elf_attack_power \\ 3) do
     map = lines |> Enum.with_index() |> Enum.reduce(%{}, fn {line, y}, map ->
       String.to_charlist(line) |> Enum.with_index() |> Enum.reduce(map, fn {chr, x}, map ->
         pos = {x, y}
+        id = 7919 * y + x
         at_pos = cond do
           chr == (hd '#') -> nil # :wall
           chr == (hd '.') -> :open
-          chr == (hd 'E') -> Unit.new(:elf, elf_attack_power)
-          chr == (hd 'G') -> Unit.new(:goblin, 3)
+          chr == (hd 'E') -> Unit.new(:elf, elf_attack_power, id)
+          chr == (hd 'G') -> Unit.new(:goblin, 3, id)
           true            -> raise "Unknown: #{chr}"
         end
         if at_pos == nil, do: map, else: Map.put(map, pos, at_pos)
@@ -192,12 +202,12 @@ defmodule Day15 do
       # combat ends
       {cave, rounds_so_far}
     else
-      {new_cave, aborted} = units |> Enum.reduce_while({cave, false}, fn {unit_pos, type}, {cave, _} ->
-        if cave.map[unit_pos] == :open do
-          # unit was just killed
+      {new_cave, aborted} = units |> Enum.reduce_while({cave, false}, fn {unit_pos, unit}, {cave, _} ->
+        if Cave.unit_id_at(cave, unit_pos) != unit.id do
+          # unit was killed
           {:cont, {cave, false}}
         else
-          case unit_turn(unit_pos, type, cave, throw_on_dead_elf) do
+          case unit_turn(unit_pos, unit, cave, throw_on_dead_elf) do
             nil   -> {:halt, {cave, true}}
             other -> {:cont, {other, false}}
           end
