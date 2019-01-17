@@ -10,13 +10,17 @@ defmodule Day5 do
     to_string(new_chlist)
   end
 
-  defp react(polymer) do
+  defp react(polymer, ignore \\ nil) do
     stack = polymer |> Enum.reduce([], fn x, stack ->
-      stack_head = if length(stack) == 0, do: nil, else: hd stack
-      if stack_head && different_polarity?(stack_head, x) do
-        tl stack
+      if ignore && same_letter_ignore_case(x, ignore) do
+        stack
       else
-        [x | stack]
+        stack_head = if length(stack) == 0, do: nil, else: hd stack
+        if stack_head && different_polarity?(stack_head, x) do
+          tl stack
+        else
+          [x | stack]
+        end
       end
     end)
     stack |> Enum.reverse()
@@ -31,17 +35,16 @@ defmodule Day5 do
   end
 
   defp same_letter_different_case(a, b) do
-    if a > b, do: a - 32 == b, else: b - 32 == a
+    abs(a - b) == 32
+    #if a > b, do: a - 32 == b, else: b - 32 == a
   end
 
   def part2(polymer) do
     chlist = String.to_charlist(polymer)
     unit_types = chlist |> Enum.map(fn u -> hd String.to_charlist(String.upcase(to_string([u]))) end) |> MapSet.new()
-    all_reacted = unit_types |> Enum.map(fn u ->
-      new_p = Enum.reject(chlist, fn x -> same_letter_ignore_case(u, x) end)
-      part1_str(to_string(new_p))
+    lengths = unit_types |> Enum.map(fn u ->
+      length(react(chlist, u))
     end)
-    min_one = all_reacted |> Enum.min_by(fn r -> String.length(r) end)
-    String.length(min_one)
+    Enum.min(lengths)
   end
 end
