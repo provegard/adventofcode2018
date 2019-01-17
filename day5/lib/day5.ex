@@ -12,7 +12,7 @@ defmodule Day5 do
 
   defp react(polymer, ignore \\ nil) do
     stack = polymer |> Enum.reduce([], fn x, stack ->
-      if ignore && same_letter_ignore_case(x, ignore) do
+      if ignore && same_letter_ignore_case?(x, ignore) do
         stack
       else
         stack_head = if length(stack) == 0, do: nil, else: hd stack
@@ -26,18 +26,8 @@ defmodule Day5 do
     stack |> Enum.reverse()
   end
 
-  defp different_polarity?(a, b) do
-    a != b && same_letter_different_case(a, b)
-  end
-
-  defp same_letter_ignore_case(a, b) do
-    a == b || same_letter_different_case(a, b)
-  end
-
-  defp same_letter_different_case(a, b) do
-    abs(a - b) == 32
-    #if a > b, do: a - 32 == b, else: b - 32 == a
-  end
+  defp different_polarity?(a, b), do: abs(a - b) == 32
+  defp same_letter_ignore_case?(a, b), do: a == b || abs(a - b) == 32
 
   def part2(polymer) do
     chlist = String.to_charlist(polymer)
